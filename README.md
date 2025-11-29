@@ -3,7 +3,6 @@
 ## Guideline
 
 - Node version: `22.15.0`
-- Run command: `npm install`
 
 ### Installation
 
@@ -13,10 +12,10 @@
 git clone https://github.com/PhanThanhDat16/graduation-api.git
 ```
 
-2. Run docker compose:
+2. Install the dependencies:
 
 ```sh
-docker-compose build
+npm install
 ```
 
 ### Running the application
@@ -24,10 +23,14 @@ docker-compose build
 1. Start the development server:
 
 ```sh
-docker-compose up
+npm run dev
 ```
 
 2. The server will start on `http://localhost:5000`.
+
+### Husky and lint-staged with [Husky](https://typicode.github.io/husky/) and [lint-staged](https://github.com/lint-staged/lint-staged#readme)
+
+- Run command: `npm run lint-staged`
 
 ### Lint with [ESLint](https://eslint.org/)
 
