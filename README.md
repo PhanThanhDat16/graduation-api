@@ -1,4 +1,4 @@
-# Clothing Store - API
+# Graduation - API
 
 ## Guideline
 
@@ -13,10 +13,10 @@
 git clone https://github.com/PhanThanhDat16/graduation-api.git
 ```
 
-2. Install the dependencies:
+2. Run docker compose:
 
 ```sh
-npm install
+docker-compose build
 ```
 
 ### Running the application
@@ -24,7 +24,7 @@ npm install
 1. Start the development server:
 
 ```sh
-npm run dev
+docker-compose up
 ```
 
 2. The server will start on `http://localhost:5000`.
