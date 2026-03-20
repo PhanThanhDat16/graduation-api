@@ -1,17 +1,62 @@
-import express from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors'
 import morgan from 'morgan'
 import http from 'http'
+import cookieParser from 'cookie-parser'
+import connectMongoDB from './config/mongodb'
+import { HttpStatus } from './constants/http.constants'
+import swaggerUi from 'swagger-ui-express'
+import swaggerJSDoc from 'swagger-jsdoc'
+
+import { routerAuth } from '@/routers/authAPI.router'
+import { routerUser } from './routers/userAPI.router'
 
 dotenv.config()
 
+connectMongoDB()
+
 const app = express()
 const server = http.createServer(app)
+
 app.use(cors())
 app.use(morgan('common'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use(cookieParser())
+
+// Config swagger
+const swaggerSpec = swaggerJSDoc({
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Graduation API',
+      version: '1.0.0'
+    },
+    servers: [
+      {
+        url: `http://localhost:${process.env.PORT}`
+      }
+    ]
+  },
+  apis: ['./src/routers/*.ts', './src/swagger/*.ts']
+})
+
+app.get('/docs.json', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json')
+  res.status(HttpStatus.OK).send(swaggerSpec)
+})
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
+// Routers
+app.use('/api/auth', routerAuth)
+app.use('/api/user', routerUser)
+
+app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+  res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+    message: err.message || 'Internal Server Error'
+  })
+})
 
 server.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`)
