@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     address: { type: String, maxlength: 255 },
 
     status: { type: String, enum: ['active', 'inactive', 'banned'], default: 'active' },
-    role: { type: String, enum: ['freelancer', 'contractor', 'admin', 'superadmin', 'other'], default: 'other' },
+    role: { type: String, enum: ['freelancer', 'contractor', 'staff', 'admin', 'other'], default: 'other' },
 
     ratingAvg: { type: Number, default: null },
     ratingCount: { type: Number, default: null },
@@ -46,7 +46,7 @@ export interface IUser extends Document {
   description: string
   address: string
   status: 'active' | 'inactive' | 'banned'
-  role: 'freelancer' | 'contractor' | 'admin' | 'superadmin' | 'other'
+  role: 'freelancer' | 'contractor' | 'staff' | 'admin' | 'other'
 
   ratingAvg: number
   ratingCount: number

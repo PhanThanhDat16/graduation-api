@@ -1,12 +1,12 @@
 export enum EStatusRoleUser {
   FREELANCER = 'freelancer',
   CONTRACTOR = 'contractor',
+  STAFF = 'staff',
   ADMIN = 'admin',
-  SUPERADMIN = 'superadmin',
   OTHER = 'other'
 }
 
-export enum EStatusAccountUser{
+export enum EStatusAccountUser {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
   BANNED = 'banned'
@@ -23,8 +23,8 @@ export interface IUserConstants {
   role: EStatusRoleUser
   status?: EStatusAccountUser
   citizenIdNumber?: string
-  ratingAvgNumber?: number,
-  ratingCountNumber?: number,
+  ratingAvgNumber?: number
+  ratingCountNumber?: number
   contractFavourite?: string[]
   provider?: string
   googleId?: string
