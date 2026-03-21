@@ -123,10 +123,13 @@ const refreshToken = asyncHandler(async (req: Request, res: Response) => {
     return
   }
 
-  let decoded: any
+  let decoded: (IAuthConstants & { iat?: number; exp?: number }) | null = null
 
   try {
-    decoded = jwt.verify(refreshToken, process.env.SECRET_KEY_REFRESHTOKEN as string)
+    decoded = jwt.verify(refreshToken, process.env.SECRET_KEY_REFRESHTOKEN as string) as IAuthConstants & {
+      iat?: number
+      exp?: number
+    }
   } catch {
     res.status(HttpStatus.FORBIDDEN).json({
       message: 'Refresh token is not valid'
@@ -143,12 +146,12 @@ const refreshToken = asyncHandler(async (req: Request, res: Response) => {
     return
   }
 
-  delete decoded.iat
-  delete decoded.exp
+  const payload = decoded as unknown as IAuthConstants & { iat?: number; exp?: number }
+  delete (payload as unknown as Record<string, unknown>).iat
+  delete (payload as unknown as Record<string, unknown>).exp
 
-  const newAccessToken = generateAccessToken(decoded)
+  const newAccessToken = generateAccessToken(payload as IAuthConstants)
 
-  // Cập nhật lại cookie expiry (nếu `EXPIRES_REFRESHTOKEN` có)
   res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getRefreshCookieOptions())
 
   res.status(HttpStatus.OK).json({
@@ -157,6 +160,56 @@ const refreshToken = asyncHandler(async (req: Request, res: Response) => {
       accessToken: newAccessToken
     }
   })
+})
+
+interface GoogleUser {
+  _id?: { toString?: () => string } | string
+  id?: { toString?: () => string } | string
+  fullName?: string
+  email?: string
+  phone?: string
+  avatar?: string
+}
+
+export const googleCallback = asyncHandler(async (req: Request & { user?: GoogleUser }, res: Response) => {
+  try {
+    const user = req.user
+    if (!user) {
+      return res.redirect(`${process.env.URL_CLIENT}/login`)
+    }
+
+    if (!user.email || !user.fullName) {
+      throw new Error('Missing required user fields from Google profile')
+    }
+
+    const userId =
+      typeof user._id === 'string'
+        ? user._id
+        : (user._id?.toString?.() ?? (typeof user.id === 'string' ? user.id : user.id?.toString?.()))
+
+    if (!userId) {
+      throw new Error('Missing user id from Google profile')
+    }
+
+    const value: IAuthConstants = {
+      id: userId,
+      fullName: user.fullName ?? '',
+      email: user.email ?? '',
+      phone: user.phone ?? undefined,
+      avatar: user.avatar ?? undefined
+    }
+
+    const accessToken = authController.generateAccessToken(value)
+    const refreshToken = await authController.generateRefreshToken(value)
+
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getRefreshCookieOptions())
+
+    // Redirect frontend + accessToken
+    res.redirect(`${process.env.URL_CLIENT}/auth/success?accessToken=${accessToken}`)
+  } catch (err) {
+    console.error(err)
+    res.redirect(`${process.env.URL_CLIENT}/login`)
+  }
 })
 
 export const authController = {

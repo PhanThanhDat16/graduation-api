@@ -9,5 +9,5 @@ export interface IAuthConstants {
   citizenIdNumber?: string
   description?: string
   address?: string
-  role?: 'freelancer' | 'contractor' | 'admin' | 'superadmin' | 'other'
+  role?: 'freelancer' | 'contractor' | 'staff' | 'admin' | 'other'
 }
