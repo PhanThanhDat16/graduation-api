@@ -11,6 +11,7 @@ import swaggerJSDoc from 'swagger-jsdoc'
 
 import { routerAuth } from '@/routers/authAPI.router'
 import { routerUser } from './routers/userAPI.router'
+import { emailOtpRouter } from './routers/email_otpsAPI.router'
 
 dotenv.config()
 
@@ -51,6 +52,7 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 // Routers
 app.use('/api/auth', routerAuth)
 app.use('/api/user', routerUser)
+app.use('/api/email-otp', emailOtpRouter)
 
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({

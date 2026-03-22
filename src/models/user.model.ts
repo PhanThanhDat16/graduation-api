@@ -21,7 +21,8 @@ const userSchema = new mongoose.Schema(
     contractFavourite: { type: [String], default: null },
 
     provider: { type: String, default: 'local' },
-    googleId: { type: String, default: '' }
+    googleId: { type: String, default: '' },
+    isVerified: { type: Boolean, default: false }
   },
   {
     versionKey: false,
@@ -52,5 +53,6 @@ export interface IUser extends Document {
   ratingCount: number
   contractFavourite: string[]
   provider: string
-  googleId?: string
+  googleId?: string,
+  isVerified?: boolean
 }

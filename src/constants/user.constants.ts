@@ -27,7 +27,8 @@ export interface IUserConstants {
   ratingCountNumber?: number,
   contractFavourite?: string[]
   provider?: string
-  googleId?: string
+  googleId?: string,
+  isVerified?: boolean
 }
 
 export interface IUserRegister extends IUserConstants {
