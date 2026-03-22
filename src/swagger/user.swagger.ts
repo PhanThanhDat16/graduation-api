@@ -65,7 +65,7 @@
  *           example: "male"
  *         role:
  *           type: string
- *           enum: [freelancer, contractor, admin, superadmin, other]
+ *           enum: [freelancer, contractor, staff, admin, other]
  *           example: "freelancer"
  *         avatar:
  *           type: string

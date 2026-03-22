@@ -137,3 +137,27 @@
  *             schema:
  *               $ref: '#/components/schemas/MessageResponse'
  */
+
+/**
+ * @openapi
+ * /api/auth/google:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Login with Google
+ *     description: Redirect flow endpoint. Open this URL directly in browser tab; Swagger Try it out uses fetch/XHR and usually fails for OAuth redirects.
+ *     responses:
+ *       302:
+ *         description: Redirect to Google login page
+ */
+
+/**
+ * @openapi
+ * /api/auth/google/callback:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Google OAuth callback
+ *     description: Google redirects to this endpoint after successful authentication
+ *     responses:
+ *       302:
+ *         description: Redirect to frontend with accessToken
+ */

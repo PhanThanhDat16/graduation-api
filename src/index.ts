@@ -9,6 +9,10 @@ import { HttpStatus } from './constants/http.constants'
 import swaggerUi from 'swagger-ui-express'
 import swaggerJSDoc from 'swagger-jsdoc'
 
+// Auth Google
+import passport from 'passport'
+import initPassport from './config/passport.config'
+
 import { routerAuth } from '@/routers/authAPI.router'
 import { routerUser } from './routers/userAPI.router'
 import { emailOtpRouter } from './routers/email_otpsAPI.router'
@@ -53,6 +57,10 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.use('/api/auth', routerAuth)
 app.use('/api/user', routerUser)
 app.use('/api/email-otp', emailOtpRouter)
+
+// Initialize Auth Google
+app.use(passport.initialize())
+initPassport(passport)
 
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
