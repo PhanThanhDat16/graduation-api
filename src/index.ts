@@ -15,6 +15,7 @@ import initPassport from './config/passport.config'
 
 import { routerAuth } from '@/routers/authAPI.router'
 import { routerUser } from './routers/userAPI.router'
+import { emailOtpRouter } from './routers/email_otpsAPI.router'
 
 dotenv.config()
 
@@ -55,6 +56,7 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 // Routers
 app.use('/api/auth', routerAuth)
 app.use('/api/user', routerUser)
+app.use('/api/email-otp', emailOtpRouter)
 
 // Initialize Auth Google
 app.use(passport.initialize())
