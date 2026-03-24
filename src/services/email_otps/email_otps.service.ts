@@ -39,14 +39,14 @@ const messageSend = (email: String, otpCode: String, subject: String) => {
 }
 
 /** Send a 6-digit OTP to the user's email via nodemailer or resendOTP*/
-const sendOtpToEmail = async (email: string, options?: { requireExisting?: boolean, subject?: string }) => {
+const sendOtpToEmail = async (email: string, purpose: 'register' | 'forgot_password', options?: { requireExisting?: boolean, subject?: string }) => {
   const now = new Date()
 
-  const existing = await EmailOtp.findOne({ email })
+  const existing = await EmailOtp.findOne({ email, purpose })
 
   // rate limit
   if (options?.requireExisting && !existing) {
-    throw new Error('No OTP request found. Please register again.')
+    throw new Error('No OTP request found. Please request a new OTP.')
   }
 
   if (existing?.lastSentAt) {
@@ -62,7 +62,7 @@ const sendOtpToEmail = async (email: string, options?: { requireExisting?: boole
 
   // Upsert: create or replace existing OTP for this email
   await EmailOtp.findOneAndUpdate(
-      { email },
+      { email, purpose},
       { otpHash, attempts: 0, expiresAt, lastSentAt: now },
       { upsert: true, new: true }
   )
@@ -72,20 +72,20 @@ const sendOtpToEmail = async (email: string, options?: { requireExisting?: boole
 }
 
 /** Verify the OTP code submitted by the user */
-const verifyEmail = async (email: string, otpCode: string) => {
-  const otpRecord = await EmailOtp.findOne({ email })
+const verifyEmail = async (email: string, otpCode: string, purpose: 'register' | 'forgot_password') => {
+  const otpRecord = await EmailOtp.findOne({ email, purpose })
 
   if (!otpRecord) {
     throw new Error('Can\'t find OTP match with this Email.')   
   }
 
   if (!otpRecord.expiresAt || otpRecord.expiresAt < new Date()) {
-    await EmailOtp.deleteOne({ email })
+    await EmailOtp.deleteOne({ email, purpose })
     throw new Error('OTP has expired. Please request a new OTP.')
   }
 
   if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
-    await EmailOtp.deleteOne({ email })
+    await EmailOtp.deleteOne({ email, purpose })
     throw new Error('Too many failed attempts. Please request a new OTP.')
   }
 
@@ -99,7 +99,7 @@ const verifyEmail = async (email: string, otpCode: string) => {
 
   // OTP is valid — mark the user as verified
   await User.findOneAndUpdate({ email }, { isVerified: true })
-  await EmailOtp.deleteOne({ email })
+  await EmailOtp.deleteOne({ email, purpose })
 
   return { message: 'Email verified successfully' }
 }

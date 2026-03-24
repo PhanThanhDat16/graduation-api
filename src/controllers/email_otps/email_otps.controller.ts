@@ -4,14 +4,14 @@ import expressAsyncHandler from "express-async-handler"
 import { HttpStatus } from '@/constants/http.constants'
 
 const sendOtpController = expressAsyncHandler(async (req: Request, res: Response) => {
-    const email = req.body.email;
+    const {email, purpose} = req.body;
 
-    if(!email) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email is required' })
+    if(!email || !purpose) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email and purpose are required' })
         return
     }
 
-    const result = await emailOtpService.sendOtpToEmail(email)
+    const result = await emailOtpService.sendOtpToEmail(email, purpose)
     res.status(HttpStatus.OK).json({
         message: result.message,
         expiresAt: result.expiresAt
@@ -19,28 +19,28 @@ const sendOtpController = expressAsyncHandler(async (req: Request, res: Response
 })
 
 const verifyOtpController = expressAsyncHandler(async (req: Request, res: Response) => {
-    const {email, otp} = req.body;
+    const {email, otp, purpose} = req.body;
 
-    if(!email || !otp) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email and OTP are required' })
+    if(!email || !otp || !purpose) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email, OTP and purpose are required' })
         return
     }
 
-    const result = await emailOtpService.verifyEmail(email, otp)
+    const result = await emailOtpService.verifyEmail(email, otp, purpose)
     res.status(HttpStatus.OK).json({
         message: result.message,
     })
 })
 
 const resendOTP = expressAsyncHandler(async (req: Request, res: Response) => {
-    const email = req.body.email;
+    const {email, purpose} = req.body;
 
-    if(!email) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email is required' })
+    if(!email || !purpose) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email and purpose are required' })
         return
     }
 
-    const result = await emailOtpService.sendOtpToEmail(email, { requireExisting: true, subject: 'Resend OTP' })
+    const result = await emailOtpService.sendOtpToEmail(email, purpose, { requireExisting: true, subject: 'Resend OTP' })
     res.status(HttpStatus.OK).json({
         message: result.message,
         expiresAt: result.expiresAt 
