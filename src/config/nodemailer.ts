@@ -9,7 +9,10 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.AUTH_EMAIL!,
     pass: process.env.AUTH_PASS!
-  }
+  },
+  connectionTimeout: 5000,
+  greetingTimeout: 3000,
+  socketTimeout: 5000
 })
 
 export default transporter
