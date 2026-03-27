@@ -32,6 +32,9 @@ const userSchema = new mongoose.Schema(
 )
 
 userSchema.index({ email: 1, citizenIdNumber: 1 }, { unique: true })
+userSchema.index({ role: 1 })
+userSchema.index({ status: 1 })
+userSchema.index({ isVerified: 1 })
 export const User = mongoose.model('User', userSchema)
 
 export interface IUser extends Document {

@@ -34,3 +34,11 @@ export interface IUserConstants {
 export interface IUserRegister extends IUserConstants {
   avatar?: string
 }
+
+export interface UserFilter {
+  role?: 'freelancer' | 'contractor' | 'staff' | 'admin' | 'other'
+  status?: 'active' | 'inactive' | 'banned'
+  isVerified?: boolean
+
+  keyword?: string
+}
