@@ -218,6 +218,8 @@ const forgotPassword_resetPassword = asyncHandler(async (req: Request, res: Resp
   const result = await authService.resetPassword(email, newPassword, resetToken)
 
   res.status(HttpStatus.OK).json({ message: result.message })
+})
+
 interface GoogleUser {
   _id?: { toString?: () => string } | string
   id?: { toString?: () => string } | string
@@ -276,5 +278,6 @@ export const authController = {
   generateRefreshToken,
   forgotPassword_requestOtp,
   forgotPassword_verifyOtp,
-  forgotPassword_resetPassword
+  forgotPassword_resetPassword,
+  googleCallback
 }

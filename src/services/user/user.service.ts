@@ -1,5 +1,13 @@
-import { IUserRegister } from '@/constants/user.constants'
+import { IUserRegister, UserFilter } from '@/constants/user.constants'
 import { User } from '@/models/user.model'
+import mongoose from 'mongoose'
+import { paginate } from '@/utils/paginate'
+import { PaginationQuery } from '@/constants/pagination.constant'
+
+const USER_SAFE_FIELDS = `
+  _id avatar email phone fullName role status
+  ratingAvg ratingCount isVerified createdAt
+`
 
 const registerUser = async (userData: IUserRegister) => {
 
@@ -40,16 +48,85 @@ const registerUser = async (userData: IUserRegister) => {
   }
 }
 
-const getAllUser = async () => {
-  return await User.find().select('-password')
+const getAllUser = async (query: PaginationQuery & UserFilter) => {
+  const filter: any = {}
+
+  if (query.role) {
+    filter.role = query.role
+  }
+
+  if (query.status) {
+    filter.status = query.status
+  }
+
+  if (query.isVerified !== undefined) {
+    filter.isVerified = query.isVerified
+  }
+
+  if (query.keyword) {
+    filter.$or = [
+      { fullName: { $regex: query.keyword, $options: 'i' } },
+      { email: { $regex: query.keyword, $options: 'i' } }
+    ]
+  }
+
+  return await paginate(User, filter, query, USER_SAFE_FIELDS)
 }
 
 const getUserById = async (id: string) => {
-  return await User.findById(id).select('-password')
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error("Invalid user ID format");
+  }
+
+  const user = await User.findById(id)
+    .select(USER_SAFE_FIELDS)
+    .lean()
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  return user
+}
+
+const updateUser = async (userId: string, userData: IUserRegister) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID')
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    userData,
+    { new: true }
+  ).select(USER_SAFE_FIELDS).lean()
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  return user
+}
+
+const deleteUser = async (userId: string) => {
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID')
+  }
+
+  const user = await User.deleteOne({ _id: userId })
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  return { message: 'User deleted successfully' }
 }
 
 export const userService = {
   registerUser,
   getAllUser,
-  getUserById
+  getUserById,
+  updateUser,
+  deleteUser
 }

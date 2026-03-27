@@ -4,7 +4,9 @@ import express from 'express'
 const router = express.Router()
 
 router.post('/register', userController.register)
-router.get('/get-all-user', userController.getAllUser)
-router.get('/get-user-by-id/:id', userController.getUserById)
+router.get('/', userController.getAllUser)
+router.get('/:id', userController.getUserById)
+router.put('/:id', userController.updateUser)
+router.delete('/:id', userController.deleteUser)
 
 export const routerUser = router
