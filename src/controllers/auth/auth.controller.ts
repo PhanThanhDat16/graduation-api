@@ -176,17 +176,18 @@ const forgotPassword_requestOtp = asyncHandler(async (req: Request, res: Respons
     return
   }
 
-  emailOtpService.sendOtpToEmail(email, 'forgot_password', { subject: 'Forgot Password' })
-  .catch(err => { console.error('Send OTP error:', err) })
+  emailOtpService.sendOtpToEmail(email, 'forgot_password', { subject: 'Forgot Password' }).catch((err) => {
+    console.error('Send OTP error:', err)
+  })
 
-  res.status(HttpStatus.OK).json({ message: 'If email exists, OTP has been sent'})
+  res.status(HttpStatus.OK).json({ message: 'If email exists, OTP has been sent' })
 })
 
 // verify OTP to reset password
 const forgotPassword_verifyOtp = asyncHandler(async (req: Request, res: Response) => {
   const { email, otp } = req.body
 
-  if(!email || !otp){
+  if (!email || !otp) {
     res.status(HttpStatus.BAD_REQUEST).json({
       message: 'Email and OTP are required'
     })
@@ -195,20 +196,16 @@ const forgotPassword_verifyOtp = asyncHandler(async (req: Request, res: Response
 
   await emailOtpService.verifyEmail(email, otp, 'forgot_password')
 
-  const token = jwt.sign(
-    { email, type: 'reset_password'},
-    process.env.SECRET_KEY_ACCESSTOKEN!,
-    { expiresIn: '5m' }
-  )
+  const token = jwt.sign({ email, type: 'reset_password' }, process.env.SECRET_KEY_ACCESSTOKEN!, { expiresIn: '5m' })
 
-  res.status(HttpStatus.OK).json({ message: "OTP verified successfully", resetToken: token })
+  res.status(HttpStatus.OK).json({ message: 'OTP verified successfully', resetToken: token })
 })
 
 // reset password by resetToken
 const forgotPassword_resetPassword = asyncHandler(async (req: Request, res: Response) => {
   const { email, newPassword, resetToken } = req.body
 
-  if(!email || !newPassword || !resetToken){
+  if (!email || !newPassword || !resetToken) {
     res.status(HttpStatus.BAD_REQUEST).json({
       message: 'Email and new password and reset token are required'
     })

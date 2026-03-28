@@ -27,7 +27,7 @@ export interface IUserConstants {
   ratingCountNumber?: number
   contractFavourite?: string[]
   provider?: string
-  googleId?: string,
+  googleId?: string
   isVerified?: boolean
 }
 
@@ -41,4 +41,17 @@ export interface UserFilter {
   isVerified?: boolean
 
   keyword?: string
+}
+
+export interface IUserUpdateProfile {
+  email?: string
+  fullName?: string
+  phone?: string
+  address?: string
+  birthday?: string
+  gender?: 'female' | 'male' | 'other'
+  description?: string
+  avatar?: string
+  role?: EStatusRoleUser
+  isVerified?: boolean
 }

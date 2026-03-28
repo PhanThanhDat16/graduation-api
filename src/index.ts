@@ -55,8 +55,8 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 // Routers
 app.use('/api/auth', routerAuth)
-app.use('/api/user', routerUser)
-app.use('/api/email-otp', emailOtpRouter)
+app.use('/api/email', emailOtpRouter)
+app.use('/api/users', routerUser)
 
 // Initialize Auth Google
 app.use(passport.initialize())

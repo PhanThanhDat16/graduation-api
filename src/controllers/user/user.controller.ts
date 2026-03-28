@@ -5,6 +5,7 @@ import expressAsyncHandler from 'express-async-handler'
 import { HttpStatus } from '@/constants/http.constants'
 import { userService } from '@/services/user/user.service'
 import { emailOtpService } from '@/services/email_otps/email_otps.service'
+import { RequestWithUser } from '@/middlewares/auth.middlewares'
 
 const register = expressAsyncHandler(async (req: Request, res: Response) => {
   const { email, password, fullName, phone, address, birthday, gender, role = 'other' } = req.body
@@ -33,11 +34,13 @@ const register = expressAsyncHandler(async (req: Request, res: Response) => {
 
   await emailOtpService.sendOtpToEmail(email, 'register', { subject: 'Verify Your Email' })
 
-  res.status(HttpStatus.OK).json({ message: 'register successfully. Please check OTP in your email to verify', data: user })
+  res
+    .status(HttpStatus.OK)
+    .json({ message: 'register successfully. Please check OTP in your email to verify', data: user })
 })
 
 const getAllUser = expressAsyncHandler(async (req: Request, res: Response) => {
-  const query = req.query;
+  const query = req.query
 
   const filter: any = {
     page: query.page ? Number(query.page) : 1,
@@ -47,10 +50,7 @@ const getAllUser = expressAsyncHandler(async (req: Request, res: Response) => {
 
     role: query.role,
     status: query.status,
-    isVerified:
-      query.isVerified !== undefined
-        ? query.isVerified === 'true'
-        : undefined,
+    isVerified: query.isVerified !== undefined ? query.isVerified === 'true' : undefined,
 
     keyword: query.keyword
   }
@@ -72,28 +72,90 @@ const getUserById = expressAsyncHandler(async (req: Request, res: Response) => {
   })
 })
 
+const deleteUser = expressAsyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params
+
+  if (!id) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'User ID is required'
+    })
+    return
+  }
+
+  const user = await userService.deleteUser(id as string)
+  res.status(HttpStatus.OK).json({
+    message: user.message
+  })
+})
+
+const getProfile = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const userId = req.user?._id
+
+  if (!userId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({
+      message: 'Unauthorized'
+    })
+    return
+  }
+
+  const user = await userService.getProfile(userId as string)
+  res.status(HttpStatus.OK).json({
+    message: 'Get profile successfully',
+    data: user
+  })
+})
+
+const updateProfile = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const userId = req.user?._id
+
+  if (!userId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({
+      message: 'Unauthorized'
+    })
+    return
+  }
+
+  const { fullName, phone, address, birthday, gender, description, avatar, isVerified } = req.body
+
+  const user = await userService.updateProfile(userId as string, {
+    fullName,
+    phone,
+    address,
+    birthday,
+    gender,
+    description,
+    avatar,
+    isVerified
+  })
+
+  res.status(HttpStatus.OK).json({
+    message: 'Update profile successfully',
+    data: user
+  })
+})
+
+// update by admin
 const updateUser = expressAsyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params
 
   if (!id) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'User ID is required',
+      message: 'User ID is required'
     })
     return
   }
 
-  const { email, password, fullName, phone, address, birthday, gender, role = 'other' } = req.body
+  const { email, fullName, phone, address, birthday, gender, role, isVerified } = req.body
 
   const user = await userService.updateUser(id as string, {
     email: email as string,
-    password: password as string,
     fullName,
     phone: phone as string,
     address,
     birthday,
     gender,
     role,
-    isVerified: false
+    isVerified
   })
 
   res.status(HttpStatus.OK).json({
@@ -102,21 +164,86 @@ const updateUser = expressAsyncHandler(async (req: Request, res: Response) => {
   })
 })
 
-const deleteUser = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
+const updatePassword = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const userId = req.user?._id
 
-  if (!id) {
-    res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'User ID is required',
+  if (!userId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({
+      message: 'Unauthorized'
     })
     return
   }
 
-  const user = await userService.deleteUser(id as string)
-  res.status(HttpStatus.OK).json({
-    message: user.message,
-  })
+  const { currentPassword, newPassword } = req.body
 
+  if (!currentPassword || !newPassword) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'Current password and new password are required'
+    })
+    return
+  }
+
+  const result = await userService.updatePassword(userId as string, currentPassword, newPassword)
+
+  res.status(HttpStatus.OK).json({
+    message: result.message
+  })
+})
+
+const updateEmail = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const userId = req.user?._id
+
+  if (!userId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({
+      message: 'Unauthorized'
+    })
+    return
+  }
+
+  const { newEmail, otp } = req.body
+
+  if (!newEmail || !otp) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'New email and OTP are required'
+    })
+    return
+  }
+
+  await emailOtpService.verifyEmail(newEmail, otp, 'change_email')
+
+  const user = await userService.updateEmail(userId as string, newEmail)
+
+  res.status(HttpStatus.OK).json({
+    message: 'Email updated successfully',
+    data: user
+  })
+})
+
+const requestEmailChangeOtp = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const userId = req.user?._id
+
+  if (!userId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({
+      message: 'Unauthorized'
+    })
+    return
+  }
+
+  const { newEmail } = req.body
+
+  if (!newEmail) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'New email is required'
+    })
+    return
+  }
+
+  const result = await emailOtpService.sendOtpToEmail(newEmail, 'change_email', { subject: 'Verify Your New Email' })
+
+  res.status(HttpStatus.OK).json({
+    message: result.message,
+    expiresAt: result.expiresAt
+  })
 })
 
 export const userController = {
@@ -124,5 +251,10 @@ export const userController = {
   getAllUser,
   getUserById,
   deleteUser,
-  updateUser
+  updateUser,
+  getProfile,
+  updateProfile,
+  updatePassword,
+  updateEmail,
+  requestEmailChangeOtp
 }

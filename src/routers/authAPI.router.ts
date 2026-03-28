@@ -8,9 +8,9 @@ const URL_CLIENT = process.env.URL_CLIENT
 router.post('/login', authController.login)
 router.post('/refresh-token', authController.refreshToken)
 router.post('/logout', authController.logout)
-router.post('/forgot-password/request', authController.forgotPassword_requestOtp)
-router.post('/forgot-password/verify', authController.forgotPassword_verifyOtp)
-router.post('/forgot-password/reset', authController.forgotPassword_resetPassword)
+router.post('/password/forgot', authController.forgotPassword_requestOtp)
+router.post('/password/verify-otp', authController.forgotPassword_verifyOtp)
+router.post('/password/reset', authController.forgotPassword_resetPassword)
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }))
 router.get(
   '/google/callback',
