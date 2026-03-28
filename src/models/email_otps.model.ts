@@ -1,4 +1,4 @@
-import mongoose, { Document } from "mongoose";
+import mongoose, { Document } from 'mongoose'
 
 const emailOtpSchema = new mongoose.Schema<IEmailOtp>(
   {

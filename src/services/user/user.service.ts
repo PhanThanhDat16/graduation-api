@@ -1,4 +1,4 @@
-import { IUserRegister, UserFilter } from '@/constants/user.constants'
+import { IUserRegister, IUserUpdateProfile, UserFilter } from '@/constants/user.constants'
 import { User } from '@/models/user.model'
 import mongoose from 'mongoose'
 import { paginate } from '@/utils/paginate'
@@ -7,13 +7,13 @@ import { PaginationQuery } from '@/constants/pagination.constant'
 const USER_SAFE_FIELDS = `
   _id avatar email phone fullName role status
   ratingAvg ratingCount isVerified createdAt
+  birthday gender address description
 `
 
 const registerUser = async (userData: IUserRegister) => {
-
   const existingUser = await User.findOne({ email: userData.email }).lean()
 
-  if (existingUser && existingUser.isVerified){
+  if (existingUser && existingUser.isVerified) {
     return false
   }
 
@@ -28,11 +28,7 @@ const registerUser = async (userData: IUserRegister) => {
       avatar: avatarUrl
     })
   } else if (!existingUser.isVerified) {
-    newUser = await User.findOneAndUpdate(
-      { email: userData.email },
-      { ...userData, avatar: avatarUrl },
-      { new: true },
-    )
+    newUser = await User.findOneAndUpdate({ email: userData.email }, { ...userData, avatar: avatarUrl }, { new: true })
   }
 
   return {
@@ -74,14 +70,11 @@ const getAllUser = async (query: PaginationQuery & UserFilter) => {
 }
 
 const getUserById = async (id: string) => {
-
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new Error("Invalid user ID format");
+    throw new Error('Invalid user ID format')
   }
 
-  const user = await User.findById(id)
-    .select(USER_SAFE_FIELDS)
-    .lean()
+  const user = await User.findById(id).select(USER_SAFE_FIELDS).lean()
 
   if (!user) {
     throw new Error('User not found')
@@ -90,16 +83,12 @@ const getUserById = async (id: string) => {
   return user
 }
 
-const updateUser = async (userId: string, userData: IUserRegister) => {
+const updateUser = async (userId: string, userData: IUserUpdateProfile) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error('Invalid user ID')
   }
 
-  const user = await User.findByIdAndUpdate(
-    userId,
-    userData,
-    { new: true }
-  ).select(USER_SAFE_FIELDS).lean()
+  const user = await User.findByIdAndUpdate(userId, userData, { new: true }).select(USER_SAFE_FIELDS).lean()
 
   if (!user) {
     throw new Error('User not found')
@@ -109,7 +98,6 @@ const updateUser = async (userId: string, userData: IUserRegister) => {
 }
 
 const deleteUser = async (userId: string) => {
-
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error('Invalid user ID')
   }
@@ -123,10 +111,89 @@ const deleteUser = async (userId: string) => {
   return { message: 'User deleted successfully' }
 }
 
+const getProfile = async (userId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID format')
+  }
+
+  const user = await User.findById(userId).select(USER_SAFE_FIELDS).lean()
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  return user
+}
+
+const updateProfile = async (userId: string, profileData: IUserUpdateProfile) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID')
+  }
+
+  const user = await User.findByIdAndUpdate(userId, profileData, { new: true }).select(USER_SAFE_FIELDS).lean()
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  return user
+}
+
+const updatePassword = async (userId: string, currentPassword: string, newPassword: string) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID')
+  }
+
+  const user = await User.findById(userId).select('+password')
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  const isMatch = await import('bcrypt').then((bcrypt) => bcrypt.compare(currentPassword, user.password || ''))
+
+  if (!isMatch) {
+    throw new Error('Current password is incorrect')
+  }
+
+  const hashedPassword = await import('bcrypt').then((bcrypt) => bcrypt.hash(newPassword, 10))
+
+  user.password = hashedPassword
+  await user.save()
+
+  return { message: 'Password updated successfully' }
+}
+
+const updateEmail = async (userId: string, newEmail: string) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID')
+  }
+
+  const existingUser = await User.findOne({ email: newEmail, _id: { $ne: userId } })
+
+  if (existingUser) {
+    throw new Error('Email already in use')
+  }
+
+  const user = await User.findByIdAndUpdate(userId, { email: newEmail, isVerified: false }, { new: true })
+    .select(USER_SAFE_FIELDS)
+    .lean()
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  return user
+}
+
 export const userService = {
   registerUser,
   getAllUser,
   getUserById,
   updateUser,
-  deleteUser
+  deleteUser,
+  getProfile,
+  updateProfile,
+  updatePassword,
+  updateEmail
 }

@@ -8,6 +8,11 @@
 /**
  * @openapi
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     LoginRequest:
  *       type: object
@@ -160,4 +165,117 @@
  *     responses:
  *       302:
  *         description: Redirect to frontend with accessToken
+ */
+
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     ForgotPasswordRequestOtp:
+ *       type: object
+ *       required: [email]
+ *       properties:
+ *         email:
+ *           type: string
+ *           example: "user@example.com"
+ *     ForgotPasswordVerifyOtp:
+ *       type: object
+ *       required: [email, otp]
+ *       properties:
+ *         email:
+ *           type: string
+ *           example: "user@example.com"
+ *         otp:
+ *           type: string
+ *           example: "123456"
+ *     ForgotPasswordVerifyResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: "OTP verified successfully"
+ *         resetToken:
+ *           type: string
+ *     ForgotPasswordReset:
+ *       type: object
+ *       required: [email, newPassword, resetToken]
+ *       properties:
+ *         email:
+ *           type: string
+ *           example: "user@example.com"
+ *         newPassword:
+ *           type: string
+ *           example: "newpassword123"
+ *         resetToken:
+ *           type: string
+ */
+
+/**
+ * @openapi
+ * /api/auth/password/forgot:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Request OTP for forgot password
+ *     description: Send OTP to email for password reset
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ForgotPasswordRequestOtp'
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
+ */
+
+/**
+ * @openapi
+ * /api/auth/password/verify-otp:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify OTP for forgot password
+ *     description: Verify OTP and get reset token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ForgotPasswordVerifyOtp'
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ForgotPasswordVerifyResponse'
+ *       400:
+ *         description: Email and OTP are required
+ */
+
+/**
+ * @openapi
+ * /api/auth/password/reset:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reset password
+ *     description: Reset password using reset token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ForgotPasswordReset'
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
+ *       400:
+ *         description: Email, new password and reset token are required
  */

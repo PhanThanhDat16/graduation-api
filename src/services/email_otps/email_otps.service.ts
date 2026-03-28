@@ -1,6 +1,6 @@
-import transporter from "@/config/nodemailer"
-import { EmailOtp } from "@/models/email_otps.model"
-import { User } from "@/models/user.model"
+import transporter from '@/config/nodemailer'
+import { EmailOtp } from '@/models/email_otps.model'
+import { User } from '@/models/user.model'
 import bcrypt from 'bcrypt'
 
 const OTP_LENGTH = 6
@@ -17,12 +17,12 @@ const generateOtp = (length: number = OTP_LENGTH) => {
   return otp
 }
 
-const messageSend = (email: String, otpCode: String, subject: String) => {
-    const mailOptions = {
-        from: `"DevFreelance " <${process.env.AUTH_EMAIL}>`,
-        to: email,
-        subject: subject,
-        html: `
+const messageSend = (email: string, otpCode: string, subject: string) => {
+  const mailOptions = {
+    from: `"DevFreelance " <${process.env.AUTH_EMAIL}>`,
+    to: email,
+    subject: subject,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
             <h2 style="color: #333;">${subject}</h2>
             <p>Your ${subject} code is:</p>
@@ -34,12 +34,18 @@ const messageSend = (email: String, otpCode: String, subject: String) => {
             <p style="color: #999; font-size: 12px;">If you did not request this, please ignore this email.</p>
         </div>
         `
-    }
-    return mailOptions;
+  }
+  return mailOptions
 }
 
+type OtpPurpose = 'register' | 'forgot_password' | 'change_email'
+
 /** Send a 6-digit OTP to the user's email via nodemailer or resendOTP*/
-const sendOtpToEmail = async (email: string, purpose: 'register' | 'forgot_password', options?: { requireExisting?: boolean, subject?: string }) => {
+const sendOtpToEmail = async (
+  email: string,
+  purpose: OtpPurpose,
+  options?: { requireExisting?: boolean; subject?: string }
+) => {
   const now = new Date()
 
   const existing = await EmailOtp.findOne({ email, purpose })
@@ -62,9 +68,9 @@ const sendOtpToEmail = async (email: string, purpose: 'register' | 'forgot_passw
 
   // Upsert: create or replace existing OTP for this email
   await EmailOtp.findOneAndUpdate(
-      { email, purpose},
-      { otpHash, attempts: 0, expiresAt, lastSentAt: now },
-      { upsert: true, new: true }
+    { email, purpose },
+    { otpHash, attempts: 0, expiresAt, lastSentAt: now },
+    { upsert: true, new: true }
   )
 
   await transporter.sendMail(messageSend(email, otpCode, options?.subject || 'Your Verification Code') as any)
@@ -72,11 +78,11 @@ const sendOtpToEmail = async (email: string, purpose: 'register' | 'forgot_passw
 }
 
 /** Verify the OTP code submitted by the user */
-const verifyEmail = async (email: string, otpCode: string, purpose: 'register' | 'forgot_password') => {
+const verifyEmail = async (email: string, otpCode: string, purpose: OtpPurpose) => {
   const otpRecord = await EmailOtp.findOne({ email, purpose })
 
   if (!otpRecord) {
-    throw new Error('Can\'t find OTP match with this Email.')   
+    throw new Error("Can't find OTP match with this Email.")
   }
 
   if (!otpRecord.expiresAt || otpRecord.expiresAt < new Date()) {
@@ -89,7 +95,7 @@ const verifyEmail = async (email: string, otpCode: string, purpose: 'register' |
     throw new Error('Too many failed attempts. Please request a new OTP.')
   }
 
-  const isMatch = await bcrypt.compare(otpCode,otpRecord.otpHash);
+  const isMatch = await bcrypt.compare(otpCode, otpRecord.otpHash)
 
   if (!isMatch) {
     otpRecord.attempts += 1
@@ -97,8 +103,10 @@ const verifyEmail = async (email: string, otpCode: string, purpose: 'register' |
     throw new Error('Invalid OTP code.')
   }
 
-  // OTP is valid — mark the user as verified
-  await User.findOneAndUpdate({ email }, { isVerified: true })
+  // OTP is valid — mark the user as verified (only for register purpose)
+  if (purpose === 'register') {
+    await User.findOneAndUpdate({ email }, { isVerified: true })
+  }
   await EmailOtp.deleteOne({ email, purpose })
 
   return { message: 'Email verified successfully' }
@@ -108,8 +116,8 @@ const getRecordByEmail = async (email: string) => {
   return await EmailOtp.findOne({ email })
 }
 
-const getAllRecordOtp = async () =>{
-    return await EmailOtp.find()
+const getAllRecordOtp = async () => {
+  return await EmailOtp.find()
 }
 
 export const emailOtpService = {
