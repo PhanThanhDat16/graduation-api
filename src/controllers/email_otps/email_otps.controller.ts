@@ -18,19 +18,19 @@ import { HttpStatus } from '@/constants/http.constants'
 //   })
 // })
 
-// const verifyOtpController = expressAsyncHandler(async (req: Request, res: Response) => {
-//   const { email, otp, purpose } = req.body
+const verifyOtpController = expressAsyncHandler(async (req: Request, res: Response) => {
+  const { email, otp, purpose } = req.body
 
-//   if (!email || !otp || !purpose) {
-//     res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email, OTP and purpose are required' })
-//     return
-//   }
+  if (!email || !otp || !purpose) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email, OTP and purpose are required' })
+    return
+  }
 
-//   const result = await emailOtpService.verifyEmail(email, otp, purpose)
-//   res.status(HttpStatus.OK).json({
-//     message: result.message
-//   })
-// })
+  const result = await emailOtpService.verifyEmail(email, otp, purpose)
+  res.status(HttpStatus.OK).json({
+    message: result.message
+  })
+})
 
 const resendOTP = expressAsyncHandler(async (req: Request, res: Response) => {
   const { email, purpose } = req.body
@@ -72,7 +72,7 @@ const resendOTP = expressAsyncHandler(async (req: Request, res: Response) => {
 
 export const emailOtpController = {
   // sendOtpController,
-  // verifyOtpController,
+  verifyOtpController,
   resendOTP
   // getAllRecordOtp,
   // getRecordByEmail
