@@ -91,28 +91,28 @@
 //  *         description: Email and purpose are required
 //  */
 
-// /**
-//  * @openapi
-//  * /api/email/verify-otp:
-//  *   post:
-//  *     tags: [EmailOTP]
-//  *     summary: Verify OTP
-//  *     requestBody:
-//  *       required: true
-//  *       content:
-//  *         application/json:
-//  *           schema:
-//  *             $ref: '#/components/schemas/VerifyOtpRequest'
-//  *     responses:
-//  *       200:
-//  *         description: OK
-//  *         content:
-//  *           application/json:
-//  *             schema:
-//  *               $ref: '#/components/schemas/VerifyOtpResponse'
-//  *       400:
-//  *         description: Email, OTP and purpose are required
-//  */
+/**
+ * @openapi
+ * /api/email/verify-otp:
+ *   post:
+ *     tags: [EmailOTP]
+ *     summary: Verify OTP
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/VerifyOtpRequest'
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/VerifyOtpResponse'
+ *       400:
+ *         description: Email, OTP and purpose are required
+ */
 
 /**
  * @openapi
