@@ -21,8 +21,9 @@ export function requireAuth(req: RequestWithUser, res: Response, next: NextFunct
   }
 
   try {
-    const decoded = jwt.verify(accessToken, process.env.SECRET_KEY_ACCESSTOKEN as string) as JwtPayload
-    req.user = decoded
+    const decoded = jwt.verify(accessToken, process.env.SECRET_KEY_ACCESSTOKEN as string) as JwtPayload & { id?: string }
+
+    req.user = { ...decoded, _id: decoded.id }
     next()
   } catch (error) {
     console.error('Error during token verification:', error)
