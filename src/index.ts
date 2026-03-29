@@ -16,6 +16,9 @@ import initPassport from './config/passport.config'
 import { routerAuth } from '@/routers/authAPI.router'
 import { routerUser } from './routers/userAPI.router'
 import { emailOtpRouter } from './routers/email_otpsAPI.router'
+import { routerWallet } from './routers/walletAPI.router'
+import { routerContract } from './routers/contractAPI.router'
+import { routerDispute } from './routers/disputeAPI.router'
 import { routerPost } from './routers/postAPI.router'
 
 dotenv.config()
@@ -68,6 +71,9 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.use('/api/auth', routerAuth)
 app.use('/api/email', emailOtpRouter)
 app.use('/api/users', routerUser)
+app.use('/api/wallets', routerWallet)
+app.use('/api/contracts', routerContract)
+app.use('/api/disputes', routerDispute)
 app.use('/api/posts', routerPost)
 
 // Initialize Auth Google
