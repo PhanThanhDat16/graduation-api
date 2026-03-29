@@ -19,6 +19,7 @@ import { emailOtpRouter } from './routers/email_otpsAPI.router'
 import { routerWallet } from './routers/walletAPI.router'
 import { routerContract } from './routers/contractAPI.router'
 import { routerDispute } from './routers/disputeAPI.router'
+import { routerPost } from './routers/postAPI.router'
 
 dotenv.config()
 
@@ -40,6 +41,16 @@ const swaggerSpec = swaggerJSDoc({
     info: {
       title: 'Graduation API',
       version: '1.0.0'
+    },
+    security: [{ bearerAuth: [] }],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        }
+      }
     },
     servers: [
       {
@@ -63,6 +74,7 @@ app.use('/api/users', routerUser)
 app.use('/api/wallets', routerWallet)
 app.use('/api/contracts', routerContract)
 app.use('/api/disputes', routerDispute)
+app.use('/api/posts', routerPost)
 
 // Initialize Auth Google
 app.use(passport.initialize())
