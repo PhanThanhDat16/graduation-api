@@ -17,6 +17,33 @@ const generateOtp = (length: number = OTP_LENGTH) => {
   return otp
 }
 
+const generatePassword = (
+  length: number = 8,
+  options = {
+    lowercase: true,
+    uppercase: true,
+    numbers: true,
+    symbols: true
+  }
+) => {
+  let chars = ''
+
+  if (options.lowercase) chars += 'abcdefghijklmnopqrstuvwxyz'
+  if (options.uppercase) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  if (options.numbers) chars += '0123456789'
+  if (options.symbols) chars += '!@#$%^&*()_+{}[]<>?'
+
+  if (!chars) throw new Error('Must choose at least one type of character')
+
+  let password = ''
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length)
+    password += chars[randomIndex]
+  }
+
+  return password
+}
+
 const messageSend = (email: string, otpCode: string, subject: string) => {
   const mailOptions = {
     from: `"DevFreelance " <${process.env.AUTH_EMAIL}>`,
@@ -77,6 +104,24 @@ const sendOtpToEmail = async (
   return { message: 'OTP sent successfully', expiresAt }
 }
 
+/** Send password to email */
+const sendPasswordToEmail = async(email: string) => {
+  const password = generatePassword(10, {
+    lowercase: true,
+    uppercase: true,
+    numbers: true,
+    symbols: true
+  })
+
+  const passwordHash = await bcrypt.hash(password, 10)
+
+  await User.findOneAndUpdate({ email }, { password: passwordHash })
+
+  await transporter.sendMail(messageSend(email, password, 'Your temporary password') as any)
+
+  return { message: 'Password sent successfully' }
+}
+
 /** Verify the OTP code submitted by the user */
 const verifyEmail = async (email: string, otpCode: string, purpose: OtpPurpose) => {
   const otpRecord = await EmailOtp.findOne({ email, purpose })
@@ -124,5 +169,6 @@ export const emailOtpService = {
   sendOtpToEmail,
   verifyEmail,
   getRecordByEmail,
-  getAllRecordOtp
+  getAllRecordOtp,
+  sendPasswordToEmail
 }

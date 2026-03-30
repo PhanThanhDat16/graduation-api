@@ -255,27 +255,3 @@
  *       400:
  *         description: Email and OTP are required
  */
-
-/**
- * @openapi
- * /api/auth/password/reset:
- *   post:
- *     tags: [Auth]
- *     summary: Reset password
- *     description: Reset password using reset token
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ForgotPasswordReset'
- *     responses:
- *       200:
- *         description: OK
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/MessageResponse'
- *       400:
- *         description: Email, new password and reset token are required
- */
