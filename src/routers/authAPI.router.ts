@@ -10,7 +10,6 @@ router.post('/refresh-token', authController.refreshToken)
 router.post('/logout', authController.logout)
 router.post('/password/forgot', authController.forgotPassword_requestOtp)
 router.post('/password/verify-otp', authController.forgotPassword_verifyOtp)
-router.post('/password/reset', authController.forgotPassword_resetPassword)
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }))
 router.get(
   '/google/callback',

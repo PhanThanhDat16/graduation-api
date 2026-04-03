@@ -183,7 +183,7 @@ const forgotPassword_requestOtp = asyncHandler(async (req: Request, res: Respons
   res.status(HttpStatus.OK).json({ message: 'If email exists, OTP has been sent' })
 })
 
-// verify OTP to reset password
+// verify OTP to reset password and send new password to email
 const forgotPassword_verifyOtp = asyncHandler(async (req: Request, res: Response) => {
   const { email, otp } = req.body
 
@@ -194,27 +194,17 @@ const forgotPassword_verifyOtp = asyncHandler(async (req: Request, res: Response
     return
   }
 
-  await emailOtpService.verifyEmail(email, otp, 'forgot_password')
+  const verifyOtp = await emailOtpService.verifyEmail(email, otp, 'forgot_password')
 
-  const token = jwt.sign({ email, type: 'reset_password' }, process.env.SECRET_KEY_ACCESSTOKEN!, { expiresIn: '5m' })
-
-  res.status(HttpStatus.OK).json({ message: 'OTP verified successfully', resetToken: token })
-})
-
-// reset password by resetToken
-const forgotPassword_resetPassword = asyncHandler(async (req: Request, res: Response) => {
-  const { email, newPassword, resetToken } = req.body
-
-  if (!email || !newPassword || !resetToken) {
+  if(!verifyOtp){
     res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'Email and new password and reset token are required'
+      message: 'Verify OTP failed'
     })
     return
   }
+  await emailOtpService.sendPasswordToEmail(email)
 
-  const result = await authService.resetPassword(email, newPassword, resetToken)
-
-  res.status(HttpStatus.OK).json({ message: result.message })
+  res.status(HttpStatus.OK).json({ message: 'OTP verified. Please check your email for the new password'})
 })
 
 interface GoogleUser {
@@ -275,6 +265,5 @@ export const authController = {
   generateRefreshToken,
   forgotPassword_requestOtp,
   forgotPassword_verifyOtp,
-  forgotPassword_resetPassword,
   googleCallback
 }
