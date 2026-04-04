@@ -20,6 +20,7 @@ import { routerWallet } from './routers/walletAPI.router'
 import { routerContract } from './routers/contractAPI.router'
 import { routerDispute } from './routers/disputeAPI.router'
 import { routerPost } from './routers/postAPI.router'
+import { PaymentMomoRouter } from './routers/payment-momo.router'
 
 dotenv.config()
 
@@ -75,6 +76,7 @@ app.use('/api/wallets', routerWallet)
 app.use('/api/contracts', routerContract)
 app.use('/api/disputes', routerDispute)
 app.use('/api/posts', routerPost)
+app.use('/api/payment', PaymentMomoRouter)
 
 // Initialize Auth Google
 app.use(passport.initialize())

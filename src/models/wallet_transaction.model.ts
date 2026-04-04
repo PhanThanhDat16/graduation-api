@@ -17,12 +17,18 @@ const walletTransactionSchema = new mongoose.Schema(
     // Contract-related fields (optional)
     contract_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
     payer_type: { type: String, enum: PAYER_TYPES },
+
+    // Payment gateway fields from momo
+    payment_order_id: { type: String },
+    payment_request_id: { type: String },
+    payment_order_info: { type: String },
+    
     description: { type: String }
   },
   {
     versionKey: false,
     strict: true,
-    timestamps: { createdAt: true, updatedAt: false }
+    timestamps: { createdAt: true, updatedAt: true }
   }
 )
 
@@ -41,4 +47,8 @@ export interface IWalletTransaction extends Document {
   payer_type?: (typeof PAYER_TYPES)[number]
   description?: string
   createdAt: Date
+  payment_order_id?: string
+  payment_request_id?: string
+  payment_order_info?: string
+
 }
