@@ -1,13 +1,14 @@
 import express from 'express'
 import { authController, googleCallback } from '@/controllers/auth/auth.controller'
 import passport from 'passport'
+import { requireAuth } from '@/middlewares/auth.middlewares'
 
 const router = express.Router()
 const URL_CLIENT = process.env.URL_CLIENT
 
 router.post('/login', authController.login)
 router.post('/refresh-token', authController.refreshToken)
-router.post('/logout', authController.logout)
+router.post('/logout', requireAuth, authController.logout)
 router.post('/password/forgot', authController.forgotPassword_requestOtp)
 router.post('/password/verify-otp', authController.forgotPassword_verifyOtp)
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }))

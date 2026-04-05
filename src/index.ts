@@ -28,7 +28,14 @@ connectMongoDB()
 const app = express()
 const server = http.createServer(app)
 
-app.use(cors())
+app.use(
+  cors({
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+)
 app.use(morgan('common'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
