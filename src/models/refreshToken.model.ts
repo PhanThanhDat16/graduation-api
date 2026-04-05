@@ -2,7 +2,8 @@ import mongoose from 'mongoose'
 
 const refreshTokenSchema = new mongoose.Schema(
   {
-    token: { type: String, require: true, unique: true },
+    accessToken: { type: String, required: true },
+    refreshToken: { type: String, required: true, unique: true },
     email: { type: String, required: true },
     createdAt: { type: Date, default: Date.now, expires: process.env.MONGODB_EXPRIES_REFRESHTOKEN }
   },
