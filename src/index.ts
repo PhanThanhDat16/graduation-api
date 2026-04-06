@@ -22,6 +22,7 @@ import { routerDispute } from './routers/disputeAPI.router'
 import { routerPost } from './routers/postAPI.router'
 import { PaymentMomoRouter } from './routers/payment-momo.router'
 import { routerReview } from './routers/reviewAPI.router'
+import { routerAdminHistory } from './routers/admin_historyAPI.router'
 
 dotenv.config()
 
@@ -86,6 +87,7 @@ app.use('/api/disputes', routerDispute)
 app.use('/api/posts', routerPost)
 app.use('/api/payment', PaymentMomoRouter)
 app.use('/api/reviews', routerReview)
+app.use('/api/admin-histories', routerAdminHistory)
 
 // Initialize Auth Google
 app.use(passport.initialize())
