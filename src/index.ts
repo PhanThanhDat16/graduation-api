@@ -23,6 +23,7 @@ import { routerPost } from './routers/postAPI.router'
 import { PaymentMomoRouter } from './routers/payment-momo.router'
 import { routerReview } from './routers/reviewAPI.router'
 import { routerAdminHistory } from './routers/admin_historyAPI.router'
+import { routerNotification } from './routers/notificationAPI.router'
 
 dotenv.config()
 
@@ -88,6 +89,7 @@ app.use('/api/posts', routerPost)
 app.use('/api/payment', PaymentMomoRouter)
 app.use('/api/reviews', routerReview)
 app.use('/api/admin-histories', routerAdminHistory)
+app.use('/api/notifications', routerNotification)
 
 // Initialize Auth Google
 app.use(passport.initialize())
