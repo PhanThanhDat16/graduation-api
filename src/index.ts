@@ -19,11 +19,12 @@ import { emailOtpRouter } from './routers/email_otpsAPI.router'
 import { routerWallet } from './routers/walletAPI.router'
 import { routerContract } from './routers/contractAPI.router'
 import { routerDispute } from './routers/disputeAPI.router'
-import { routerPost } from './routers/postAPI.router'
+import { routerProject } from './routers/projectAPI.router'
 import { PaymentMomoRouter } from './routers/payment-momo.router'
 import { routerReview } from './routers/reviewAPI.router'
 import { routerAdminHistory } from './routers/admin_historyAPI.router'
 import { routerNotification } from './routers/notificationAPI.router'
+import { routerApplication } from './routers/applicationAPI.router'
 
 dotenv.config()
 
@@ -85,11 +86,12 @@ app.use('/api/users', routerUser)
 app.use('/api/wallets', routerWallet)
 app.use('/api/contracts', routerContract)
 app.use('/api/disputes', routerDispute)
-app.use('/api/posts', routerPost)
+app.use('/api/projects', routerProject)
 app.use('/api/payment', PaymentMomoRouter)
 app.use('/api/reviews', routerReview)
 app.use('/api/admin-histories', routerAdminHistory)
 app.use('/api/notifications', routerNotification)
+app.use('/api/applications', routerApplication)
 
 // Initialize Auth Google
 app.use(passport.initialize())
