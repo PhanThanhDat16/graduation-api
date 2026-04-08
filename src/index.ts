@@ -21,6 +21,7 @@ import { routerContract } from './routers/contractAPI.router'
 import { routerDispute } from './routers/disputeAPI.router'
 import { routerProject } from './routers/projectAPI.router'
 import { PaymentMomoRouter } from './routers/payment-momo.router'
+import { PaymentVnpayRouter } from './routers/payment-vnpay.router'
 import { routerReview } from './routers/reviewAPI.router'
 import { routerAdminHistory } from './routers/admin_historyAPI.router'
 import { routerNotification } from './routers/notificationAPI.router'
@@ -88,6 +89,7 @@ app.use('/api/contracts', routerContract)
 app.use('/api/disputes', routerDispute)
 app.use('/api/projects', routerProject)
 app.use('/api/payment/momo', PaymentMomoRouter)
+app.use('/api/payment/vnpay', PaymentVnpayRouter)
 app.use('/api/reviews', routerReview)
 app.use('/api/admin-histories', routerAdminHistory)
 app.use('/api/notifications', routerNotification)

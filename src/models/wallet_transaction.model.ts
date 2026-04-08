@@ -19,9 +19,14 @@ const walletTransactionSchema = new mongoose.Schema(
     payer_type: { type: String, enum: PAYER_TYPES },
 
     // Payment gateway fields from momo
-    payment_order_id: { type: String },
+    payment_order_id: { type: String, unique: true },
     payment_request_id: { type: String },
     payment_order_info: { type: String },
+
+    // Payment gateway fields from vnpay
+    vnp_ResponseCode: { type: String },
+    vnp_TransactionNo: { type: String },
+    vnp_PayDate: { type: String },
     
     description: { type: String }
   },
@@ -50,5 +55,7 @@ export interface IWalletTransaction extends Document {
   payment_order_id?: string
   payment_request_id?: string
   payment_order_info?: string
-
+  vnp_ResponseCode?: string
+  vnp_TransactionNo?: string
+  vnp_PayDate?: string
 }
