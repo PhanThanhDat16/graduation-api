@@ -12,8 +12,6 @@ const walletSchema = new mongoose.Schema(
   }
 )
 
-walletSchema.index({ user_id: 1 }, { unique: true })
-
 export const Wallet = mongoose.model('Wallet', walletSchema)
 
 export interface IWallet extends Document {

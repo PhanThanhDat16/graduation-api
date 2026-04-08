@@ -37,12 +37,12 @@ const generateAccessToken = (user: IAuthConstants) => {
   })
 }
 
-const generateRefreshToken = async (user: IAuthConstants) => {
+const generateRefreshToken = async (user: IAuthConstants, accessToken: string) => {
   const refreshToken = jwt.sign(user, process.env.SECRET_KEY_REFRESHTOKEN as string, {
     expiresIn: parseInt(process.env.EXPIRES_REFRESHTOKEN as string)
   })
 
-  await refreshTokenService.save(refreshToken, user.email)
+  await refreshTokenService.save(accessToken, refreshToken, user.email)
 
   return refreshToken
 }
@@ -84,7 +84,7 @@ const login = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const accessToken = generateAccessToken(dataUser)
-  const refreshToken = await generateRefreshToken(dataUser)
+  const refreshToken = await generateRefreshToken(dataUser, accessToken)
 
   res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getRefreshCookieOptions())
 
@@ -98,12 +98,11 @@ const login = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const logout = asyncHandler(async (req: Request, res: Response) => {
-  const cookieRefreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME] as string | undefined
-  const { refreshToken: bodyRefreshToken } = req.body as { refreshToken?: string }
-  const refreshToken = cookieRefreshToken ?? bodyRefreshToken
+  const authorizationHeader = req.headers.authorization
+  const accessToken = authorizationHeader?.split(' ')[1]
 
-  if (refreshToken) {
-    await refreshTokenService.delete(refreshToken)
+  if (accessToken) {
+    await refreshTokenService.deleteByAccessToken(accessToken)
   }
 
   res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, getRefreshCookieOptions())
@@ -245,7 +244,7 @@ export const googleCallback = asyncHandler(async (req: Request & { user?: Google
     }
 
     const accessToken = authController.generateAccessToken(value)
-    const refreshToken = await authController.generateRefreshToken(value)
+    const refreshToken = await authController.generateRefreshToken(value, accessToken)
 
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getRefreshCookieOptions())
 
