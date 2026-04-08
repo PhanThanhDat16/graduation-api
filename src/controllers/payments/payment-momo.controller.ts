@@ -76,27 +76,34 @@ export const paymentController = {
    * MUST always return HTTP 200 to MoMo regardless of processing result.
    */
   handleCallback: expressAsyncHandler(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
+    const callbackBody = req.body as MoMoCallbackBody;
+    
     try {
-      const callbackBody = req.body as MoMoCallbackBody;
 
-      logger.info("IPN Callback received", {
-        orderId: callbackBody.orderId,
-        resultCode: callbackBody.resultCode,
-      });
+      logger.info("IPN Callback received", { orderId: callbackBody.orderId });
 
       await paymentService.handleCallback(callbackBody);
 
       // Always return 200 to MoMo
       res.status(HttpStatus.OK).json({ message: "OK" });
-    } catch (error) {
-      // Log the error but still return 200 to MoMo
-      // MoMo requires 200 response, otherwise it will retry
-      logger.error("Callback processing error", {
-        error: error instanceof Error ? error.message : "Unknown error",
-        body: req.body,
+    } catch (error: any) {
+
+      const logicErrors = ["Invalid signature", "Amount mismatch", "Transaction not found"];
+      const isLogicError = logicErrors.some(msg => error.message?.includes(msg));
+
+      logger.error("Callback Error", {
+        orderId: callbackBody.orderId,
+        message: error.message
       });
 
-      res.status(HttpStatus.OK).json({ message: "OK" });
+      if (isLogicError) {
+        // Trả về 200 để MoMo không retry nữa (vì retry cũng sẽ vẫn lỗi logic đó)
+        res.status(HttpStatus.OK).json({ message: "Error acknowledged" });
+      } else {
+        // Trả về 500 để MoMo RETRY lại (ví dụ lỗi DB tạm thời)
+        // Khi DB sống lại, IPN gửi lại sẽ giúp khách được cộng tiền tự động
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server busy" });
+      }
     }
   }),
 

@@ -119,7 +119,7 @@ export const paymentService = {
           headers: {
             "Content-Type": "application/json",
           },
-          timeout: 30000,
+          timeout: 60000,
         }
       );
 
@@ -164,13 +164,6 @@ export const paymentService = {
 
   /**
    * Handle MoMo callback (IPN).
-   *
-   * 1. Rebuild raw signature from callback body
-   * 2. Verify signature → reject if invalid
-   * 3. Find transaction by payment_order_id
-   * 4. Create session transaction
-   * 5. Check if transaction is valid: Update status to PAID or FAILED
-   * 6. Update balance of wallet depend on wallet_id from transaction
    */
   handleCallback: async (body: MoMoCallbackBody): Promise<void> => {
     logger.info("MoMo callback received", {
@@ -205,71 +198,54 @@ export const paymentService = {
     );
 
     if (!isValid) {
-      logger.error("SECURITY: Invalid callback signature detected!", {
-        orderId: body.orderId,
-        receivedSignature: body.signature,
-      });
       throw new Error("Invalid signature — possible fraud attempt");
     }
 
-    logger.info("Callback signature verified successfully", { orderId: body.orderId });
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        // Tìm transaction và LOCK bản ghi này trong session
+        const transaction = await WalletTransaction.findOne(
+          { payment_order_id: body.orderId },
+          null,
+          { session }
+        );
 
-    // Step 3: Find transaction
-    const transaction = await WalletTransaction.findOne({ payment_order_id: body.orderId });
-
-    if (!transaction) {
-      logger.error("Transaction not found for callback", { orderId: body.orderId });
-      throw new Error(`Transaction not found: ${body.orderId}`);
-    }
-
-    // Step 4: Prevent duplicate payment
-    if (transaction.status === ETransactionStatus.COMPLETED) {
-      logger.warn("Duplicate callback — Transaction already PAID", { orderId: body.orderId });
-      return; // Silently ignore, don't error
-    }
-
-    // Step 5: Validate amount consistency
-    if (transaction.amount !== body.amount) {
-      logger.error("SECURITY: Amount mismatch detected!", {
-        orderId: body.orderId,
-        expectedAmount: transaction.amount,
-        receivedAmount: body.amount,
-      });
-      throw new Error("Amount mismatch — possible fraud attempt");
-    }
-
-    // Step 6: Update transaction
-    if (body.resultCode === 0) {
-        const session = await mongoose.startSession()
-        session.startTransaction()
-
-        try {
-            // 1. update transaction
-            transaction.status = ETransactionStatus.COMPLETED
-            await transaction.save({ session })
-
-            // 2. update wallet
-            await Wallet.findByIdAndUpdate(
-              transaction.wallet_id,
-              { $inc: { balance: transaction.amount } },
-              { session }
-            )
-
-            await session.commitTransaction()
-        } catch (err) {
-            await session.abortTransaction()
-            throw err
-        } finally {
-            session.endSession()
+        if (!transaction) {
+          // Log lỗi nhưng không cần throw nếu bạn muốn trả về 204 cho MoMo luôn
+          throw new Error("Transaction not found");
         }
-    } else {
-      transaction.status = ETransactionStatus.FAILED;
-      await transaction.save();
-      logger.info("Transaction payment failed", {
-        orderId: body.orderId,
-        resultCode: body.resultCode,
-        message: body.message,
+
+        // Kiểm tra trạng thái (Idempotency)
+        if (transaction.status === ETransactionStatus.COMPLETED) {
+          return; // Thoát êm đẹp
+        }
+
+        // Kiểm tra số tiền
+        if (Number(transaction.amount) !== Number(body.amount)) {
+          throw new Error("Amount mismatch");
+        }
+
+        if (body.resultCode === 0) {
+          transaction.status = ETransactionStatus.COMPLETED;
+          await transaction.save({ session });
+
+          // Cộng tiền ví
+          await Wallet.findByIdAndUpdate(
+            transaction.wallet_id,
+            { $inc: { balance: transaction.amount } },
+            { session, new: true }
+          );
+        } else {
+          transaction.status = ETransactionStatus.FAILED;
+          await transaction.save({ session });
+        }
       });
+    } catch (error) {
+      logger.error("MoMo Callback Transaction Error:", error);
+      throw error;
+    } finally {
+      session.endSession();
     }
   },
 
