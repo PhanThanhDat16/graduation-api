@@ -181,7 +181,7 @@
 
 /**
  * @openapi
- * /api/payment/create:
+ * /api/payment/momo/create:
  *   post:
  *     summary: Create a new MoMo QR payment
  *     description: Creates a wallet transaction (PENDING) and requests a MoMo QR code for the user to pay. Requires authentication.
@@ -225,7 +225,7 @@
 
 /**
  * @openapi
- * /api/payment/callback:
+ * /api/payment/momo/callback:
  *   post:
  *     summary: Handle MoMo IPN callback
  *     description: |
@@ -252,7 +252,7 @@
 
 /**
  * @openapi
- * /api/payment/return:
+ * /api/payment/momo/return:
  *   get:
  *     summary: Handle MoMo redirect after payment
  *     description: MoMo redirects the user to this URL after payment completion. Returns the payment result as JSON.
@@ -292,7 +292,7 @@
 
 /**
  * @openapi
- * /api/payment/{orderId}:
+ * /api/payment/momo/{orderId}:
  *   get:
  *     summary: Get transaction status by order ID
  *     description: Retrieves the current status of a wallet transaction by its payment_order_id.
