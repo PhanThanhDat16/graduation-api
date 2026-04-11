@@ -1,6 +1,5 @@
+import { EProjectStatus } from '@/constants/project.constant'
 import mongoose, { Document } from 'mongoose'
-
-export const PROJECT_STATUS = ['draft', 'open', 'closed'] as const
 
 const projectSchema = new mongoose.Schema(
   {
@@ -11,7 +10,7 @@ const projectSchema = new mongoose.Schema(
     skills: { type: [String], default: [] },
     budgetMin: { type: Number, required: true },
     budgetMax: { type: Number, required: true },
-    status: { type: String, enum: PROJECT_STATUS, default: 'draft' },
+    status: { type: String, enum: EProjectStatus, default: 'draft' },
     likes: { type: Number, default: 0 },
     listLike: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] }
   },
@@ -30,7 +29,7 @@ export interface IProject extends Document {
   skills: string[]
   budgetMin: number
   budgetMax: number
-  status: (typeof PROJECT_STATUS)[number]
+  status: EProjectStatus
   likes: number
   listLike: mongoose.Types.ObjectId[]
   createdAt: Date

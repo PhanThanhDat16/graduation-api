@@ -1,7 +1,6 @@
+import { EResolutionType } from '@/constants/contract.constants'
+import { EDisputeStatus } from '@/constants/dispute_form.constants'
 import mongoose, { Document } from 'mongoose'
-
-export const DISPUTE_STATUS = ['open', 'negotiating', 'admin_review', 'resolved', 'auto_closed'] as const
-export const RESOLUTION_TYPES = ['extend', 'cancel', 'split', 'auto_close'] as const
 
 const disputeFormSchema = new mongoose.Schema(
   {
@@ -13,9 +12,9 @@ const disputeFormSchema = new mongoose.Schema(
     // Ai mở dispute
     opened_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
-    status: { type: String, enum: DISPUTE_STATUS, default: 'open' },
+    status: { type: String, enum: EDisputeStatus, default: 'open' },
 
-    resolution_type: { type: String, enum: RESOLUTION_TYPES },
+    resolution_type: { type: String, enum: EResolutionType },
 
     contractor_reason: { type: String },
     freelancer_reason: { type: String },
@@ -61,9 +60,9 @@ export interface IDisputeForm extends Document {
   freelancer_id: mongoose.Types.ObjectId
   opened_by: mongoose.Types.ObjectId
 
-  status: (typeof DISPUTE_STATUS)[number]
+  status: EDisputeStatus
 
-  resolution_type?: (typeof RESOLUTION_TYPES)[number]
+  resolution_type?: EResolutionType
 
   contractor_reason?: string
   freelancer_reason?: string
