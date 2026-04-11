@@ -1,3 +1,5 @@
+import { EDisputeStatus } from './dispute_form.constants'
+
 export enum EContractStatus {
   DRAFT = 'draft',
   PENDING_AGREEMENT = 'pending_agreement',
@@ -17,14 +19,6 @@ export enum EEscrowStatus {
   RELEASED = 'released',
   REFUNDED = 'refunded',
   SPLIT = 'split'
-}
-
-export enum EDisputeStatus {
-  OPEN = 'open',
-  NEGOTIATING = 'negotiating',
-  ADMIN_REVIEW = 'admin_review',
-  RESOLVED = 'resolved',
-  AUTO_CLOSED = 'auto_closed'
 }
 
 export enum EResolutionType {
