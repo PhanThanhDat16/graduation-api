@@ -14,7 +14,13 @@ export const refreshTokenService = {
   },
 
   deleteByAccessToken: async (accessToken: string) => {
-    return await RefreshToken.deleteOne({ accessToken })
+    const result = await RefreshToken.deleteOne({ accessToken })
+
+    if (result.deletedCount === 0) {
+      throw new Error('Access token not found')
+    }
+
+    return true
   },
 
   deleteAllForUser: async (email: string) => {
