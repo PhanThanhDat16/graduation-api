@@ -6,6 +6,7 @@ import expressAsyncHandler from "express-async-handler";
 import { RequestWithUser } from "@/middlewares/auth.middlewares";
 import { HttpStatus } from "@/constants/http.constants";
 import { EPaymentMethod, ETransactionType } from "@/constants/wallet.constants";
+
 /**
  * Payment Controller — handles HTTP request/response logic.
  * Business logic is delegated to PaymentService.
@@ -15,9 +16,8 @@ export const paymentController = {
   // create payment momo
   createPayment: expressAsyncHandler(async (req: RequestWithUser, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { amount, type, method } = req.body;
+      const { amount, type, method, description } = req.body;
       const userId = req.user?._id
-
 
       // Validate input
       if(!userId){
@@ -60,7 +60,7 @@ export const paymentController = {
         return;
       }
 
-      const result = await paymentService.createPayment(userId,amount,type as ETransactionType,method as EPaymentMethod);
+      const result = await paymentService.createPayment(userId,amount,type as ETransactionType,method as EPaymentMethod, description as string);
 
       res.status(HttpStatus.OK).json({
         success: true,
@@ -112,27 +112,12 @@ export const paymentController = {
    * Redirects user to a frontend result page with order details.
    */
   handleReturn: expressAsyncHandler(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
-    const { orderId, resultCode, message } = req.query;
+    const { orderId, resultCode, message} = req.query;
 
-    logger.info("MoMo return redirect received", {
-      orderId,
-      resultCode,
-      message,
-    });
+    const order = await paymentService.getOrderStatus(orderId as string);
 
-    const params = new URLSearchParams();
-    if (orderId) params.set("orderId", String(orderId));
-    if (resultCode) params.set("resultCode", String(resultCode));
-    if (message) params.set("message", String(message));
+    res.redirect(`http://localhost:3000/payment-result?orderId=${orderId}&resultCode=${resultCode}&message=${message}&amount=${order.amount}&method_payment=${EPaymentMethod.MOMO}&author_payment=${order.fullName}&email=${order.email}`)
 
-    res.status(HttpStatus.OK).json({
-      success: true,
-      data: {
-        orderId: orderId,
-        resultCode: resultCode,
-        message: message,
-      },
-    });
   }),
 
   /**

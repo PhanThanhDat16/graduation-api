@@ -36,7 +36,7 @@ export const paymentService = {
    * 4. POST to MoMo endpoint
    * 5. Return qrCodeUrl, payUrl, orderId
    */
-  createPayment: async (userId: string, amount: number, type: ETransactionType, method: EPaymentMethod ): Promise<CreatePaymentResponse> => {
+  createPayment: async (userId: string, amount: number, type: ETransactionType, method: EPaymentMethod, description: string ): Promise<CreatePaymentResponse> => {
     // Validate amount
     if (!userId) {
       throw new Error("User ID is required");
@@ -66,7 +66,7 @@ export const paymentService = {
         method_payment: method,
         status: ETransactionStatus.PENDING,
         user_id: userId,
-        description: `Payment for transaction from MoMo: type_transaction [${type}] with amount [${amount}] VND`,
+        description: description || `transaction from MoMo with amount [${amount}] VND`,
         payment_order_id: orderId,
         payment_request_id: requestId,
         payment_order_info: orderInfo
@@ -253,7 +253,7 @@ export const paymentService = {
    * Get order status by orderId.
    */
   getOrderStatus : async (orderId: string): Promise<ITransactionStatusResponse> => {
-    const order = await WalletTransaction.findOne({ payment_order_id: orderId });
+    const order = await WalletTransaction.findOne({ payment_order_id: orderId }).populate("user_id", "fullName email");
 
     if (!order) {
       throw new Error(`Order not found: ${orderId}`);
@@ -262,6 +262,8 @@ export const paymentService = {
     return {
       payment_order_id: order.payment_order_id as string,
       amount: order.amount,
+      fullName: (order.user_id as any).fullName || '',
+      email: (order.user_id as any).email || '',
       status: order.status as ETransactionStatus,
       payment_request_id: order.payment_request_id as string,
       createdAt: order.createdAt,
