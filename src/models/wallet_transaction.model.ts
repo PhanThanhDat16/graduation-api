@@ -1,22 +1,18 @@
+import { EPayerType, EPaymentMethod, ETransactionStatus, ETransactionType } from '@/constants/wallet.constants'
 import mongoose, { Document } from 'mongoose'
-
-export const TRANSACTION_TYPES = ['deposit', 'withdraw', 'escrow_deposit', 'escrow_release', 'refund', 'admin_fee'] as const
-export const PAYMENT_METHODS = ['momo', 'vnpay', 'wallet'] as const
-export const TRANSACTION_STATUS = ['pending', 'completed', 'failed', 'cancelled'] as const
-export const PAYER_TYPES = ['contractor', 'freelancer', 'admin'] as const
 
 const walletTransactionSchema = new mongoose.Schema(
   {
     wallet_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Wallet', required: true },
     amount: { type: Number, required: true },
-    type: { type: String, enum: TRANSACTION_TYPES, required: true },
-    method_payment: { type: String, enum: PAYMENT_METHODS },
-    status: { type: String, enum: TRANSACTION_STATUS, default: 'pending' },
+    type: { type: String, enum: ETransactionType, required: true },
+    method_payment: { type: String, enum: EPaymentMethod },
+    status: { type: String, enum: ETransactionStatus, default: 'pending' },
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
     // Contract-related fields (optional)
     contract_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
-    payer_type: { type: String, enum: PAYER_TYPES },
+    payer_type: { type: String, enum: EPayerType },
 
     // Payment gateway fields from momo
     payment_order_id: { type: String, unique: true },
@@ -27,7 +23,7 @@ const walletTransactionSchema = new mongoose.Schema(
     vnp_ResponseCode: { type: String },
     vnp_TransactionNo: { type: String },
     vnp_PayDate: { type: String },
-    
+
     description: { type: String }
   },
   {
@@ -44,12 +40,12 @@ export const WalletTransaction = mongoose.model('WalletTransaction', walletTrans
 export interface IWalletTransaction extends Document {
   wallet_id: mongoose.Types.ObjectId
   amount: number
-  type: (typeof TRANSACTION_TYPES)[number]
-  method_payment?: (typeof PAYMENT_METHODS)[number]
-  status: (typeof TRANSACTION_STATUS)[number]
+  type: ETransactionType
+  method_payment?: EPaymentMethod
+  status: ETransactionStatus
   user_id?: mongoose.Types.ObjectId
   contract_id?: mongoose.Types.ObjectId
-  payer_type?: (typeof PAYER_TYPES)[number]
+  payer_type?: EPayerType
   description?: string
   createdAt: Date
   payment_order_id?: string

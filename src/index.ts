@@ -26,6 +26,7 @@ import { routerReview } from './routers/reviewAPI.router'
 import { routerAdminHistory } from './routers/admin_historyAPI.router'
 import { routerNotification } from './routers/notificationAPI.router'
 import { routerApplication } from './routers/applicationAPI.router'
+import { setupSocket } from './socket/socket'
 import { routerAccount } from './routers/accountAPI.router'
 
 dotenv.config()
@@ -47,6 +48,9 @@ app.use(morgan('common'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
+
+// SETUP SOCKET
+setupSocket(server)
 
 // Config swagger
 const swaggerSpec = swaggerJSDoc({

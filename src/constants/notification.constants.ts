@@ -1,4 +1,4 @@
-import { PaginationQuery } from "./pagination.constant";
+import { PaginationQuery } from './pagination.constant'
 
 /**
  * review later
@@ -32,21 +32,29 @@ export enum ENotificationType {
 }
 */
 
+export enum ENotificationType {
+  CONTRACT = 'contract',
+  PAYMENT = 'payment',
+  DISPUTE = 'dispute',
+  MESSAGE = 'message',
+  SYSTEM = 'system'
+}
+
 export interface NotificationFilter {
-  user_id?: string;
-  type?: string;
-  is_read?: boolean;
+  user_id?: string
+  type?: ENotificationType
+  is_read?: boolean
 }
 
 export interface ICreateNotification {
-  user_id: string;
-  type: string;
-  title: string;
-  content: string;
+  user_id: string
+  type: ENotificationType
+  title: string
+  content: string
 }
 
 export interface IUpdateNotification {
-  is_read?: boolean;
+  is_read?: boolean
 }
 
 export interface NotificationQuery extends PaginationQuery, NotificationFilter {}

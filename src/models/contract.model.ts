@@ -1,17 +1,5 @@
+import { EContractStatus, EEscrowStatus } from '@/constants/contract.constants'
 import mongoose, { Document } from 'mongoose'
-
-export const CONTRACT_STATUS = [
-  'draft',
-  'pending_agreement',
-  'waiting_payment',
-  'running',
-  'submitted',
-  'completed',
-  'dispute',
-  'cancelled'
-] as const
-
-export const ESCROW_STATUS = ['pending', 'partial', 'funded', 'locked', 'released', 'refunded', 'split'] as const
 
 const contractSchema = new mongoose.Schema(
   {
@@ -65,7 +53,7 @@ const contractSchema = new mongoose.Schema(
     expand_count: { type: Number, default: 0 },
     expand_deadline: { type: Date },
 
-    status: { type: String, enum: CONTRACT_STATUS, default: 'draft' },
+    status: { type: String, enum: EContractStatus, default: EContractStatus.DRAFT },
 
     // Escrow tracking
     total_escrow_amount: { type: Number, default: 0, min: 0 }, // Tổng tiền trong escrow
@@ -76,7 +64,7 @@ const contractSchema = new mongoose.Schema(
     refunded_to_freelancer: { type: Number, default: 0, min: 0 }, // Hoàn deposit cho freelancer
     admin_fee_collected: { type: Number, default: 0, min: 0 },
 
-    escrow_status: { type: String, enum: ESCROW_STATUS, default: 'pending' },
+    escrow_status: { type: String, enum: EEscrowStatus, default: 'pending' },
     last_updated_at: { type: Date }
   },
   {
@@ -130,7 +118,7 @@ export interface IContract extends Document {
   expand_count: number
   expand_deadline?: Date
 
-  status: (typeof CONTRACT_STATUS)[number]
+  status: EContractStatus
 
   total_escrow_amount: number
 
@@ -139,7 +127,7 @@ export interface IContract extends Document {
   refunded_to_freelancer: number
   admin_fee_collected: number
 
-  escrow_status: (typeof ESCROW_STATUS)[number]
+  escrow_status: EEscrowStatus
   last_updated_at?: Date
 
   createdAt: Date

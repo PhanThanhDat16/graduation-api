@@ -1,12 +1,11 @@
+import { EWithdrawStatus } from '@/constants/wallet.constants'
 import mongoose, { Document } from 'mongoose'
-
-export const WITHDRAW_STATUS = ['pending', 'approved', 'rejected', 'paid'] as const
 
 const withdrawRequestSchema = new mongoose.Schema(
   {
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     amount: { type: Number, required: true, min: 0 },
-    status: { type: String, enum: WITHDRAW_STATUS, default: 'pending' },
+    status: { type: String, enum: EWithdrawStatus, default: 'pending' },
     admin_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     processed_at: { type: Date, default: null }
   },
@@ -24,7 +23,7 @@ export const WithdrawRequest = mongoose.model('WithdrawRequest', withdrawRequest
 export interface IWithdrawRequest extends Document {
   user_id: mongoose.Types.ObjectId
   amount: number
-  status: (typeof WITHDRAW_STATUS)[number]
+  status: EWithdrawStatus
   admin_id?: mongoose.Types.ObjectId
   createdAt: Date
   processed_at?: Date
