@@ -30,7 +30,7 @@ export const vnpayController = {
    */
   createPayment: expressAsyncHandler(async (req: RequestWithUser, res: Response): Promise<void> => {
     try {
-        const { amount, type, method } = req.body;
+        const { amount, type, method, description } = req.body;
         const userId = req.user?._id
     
         // Validate input
@@ -88,7 +88,7 @@ export const vnpayController = {
             method_payment: method,
             status: ETransactionStatus.PENDING,
             user_id: userId,
-            description: `Payment for transaction from VNPAY: type_transaction [${type}] with amount [${amount}] VND`,
+            description: description || `transaction from VNPAY with amount [${amount}] VND`,
             payment_order_id: orderId,
             payment_request_id: requestId,
             payment_order_info: orderInfo
@@ -150,37 +150,20 @@ export const vnpayController = {
             return;
         }
 
-        const { vnp_ResponseCode, vnp_TxnRef, vnp_Amount } = query;
+        const { vnp_ResponseCode, vnp_TxnRef } = query;
 
         // 2. Tìm transaction để lấy thông tin hiển thị
-        const transaction = await WalletTransaction.findOne({ payment_order_id: vnp_TxnRef as string });
+        const transaction = await WalletTransaction.findOne({ payment_order_id: vnp_TxnRef as string }).populate('user_id', 'fullName email');
         if (!transaction) {
             res.status(HttpStatus.NOT_FOUND).json({ code: '01', message: 'Order Not Found' });
             return;
         }
 
-        // 3. Xác định trạng thái thanh toán dựa trên ResponseCode
-        // Mã '00' là thành công, còn lại là lỗi (User hủy, thiếu số dư, lỗi mạng...)
-        const isSuccess = vnp_ResponseCode === '00';
-        const displayAmount = (Number(vnp_Amount) / 100).toLocaleString('vi-VN');
+        const author_name = (transaction.user_id as any).fullName as string
+        const email = (transaction.user_id as any).email as string;
 
-        // 4. Trả về kết quả cho Frontend hiển thị
-        // Lưu ý: Chúng ta không update status ở đây, chỉ "đọc" trạng thái hiện tại
-        res.status(HttpStatus.OK).json({
-            code: isSuccess ? '00' : vnp_ResponseCode,
-            status: isSuccess ? 'Success' : 'Failed',
-            message: isSuccess ? 'Giao dịch thành công' : 'Giao dịch không thành công hoặc bị hủy',
-            data: {
-                orderId: vnp_TxnRef,
-                amount: displayAmount,
-                bankCode: query.vnp_BankCode,
-                transactionNo: query.vnp_TransactionNo,
-                payDate: formatDate(query.vnp_PayDate as string),
-                // Trả về object transaction để FE lấy thông tin ví/user nếu cần
-                transaction 
-            },
-        });
-
+        res.redirect(`http://localhost:3000/payment-result?orderId=${vnp_TxnRef}&resultCode=${vnp_ResponseCode}&message=${transaction.description}&amount=${transaction.amount}&method_payment=${EPaymentMethod.VNPAY}&author_payment=${author_name}&email=${email}`)
+        
     } catch (error) {
         logger.error('Handle return error:', error);
         res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({

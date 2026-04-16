@@ -60,6 +60,8 @@ export interface CreatePaymentResponse {
 // status response from momo
 export interface ITransactionStatusResponse {
   payment_order_id: string;
+  fullName: string;
+  email: string;
   amount: number;
   status: ETransactionStatus;
   payment_request_id: string;
