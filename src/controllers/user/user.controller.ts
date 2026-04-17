@@ -1,4 +1,3 @@
-import bcrypt from 'bcrypt'
 import { Request, Response } from 'express'
 import expressAsyncHandler from 'express-async-handler'
 
@@ -8,51 +7,31 @@ import { emailOtpService } from '@/services/email_otps/email_otps.service'
 import { RequestWithUser } from '@/middlewares/auth.middlewares'
 
 const register = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { email, password, fullName, phone, address, birthday, gender, role = 'other' } = req.body
-
-  const hashedPassword = await bcrypt.hash(password, 10)
-
   const user = await userService.registerUser({
-    email: email as string,
-    password: hashedPassword,
-    fullName,
-    phone: phone as string,
-    address,
-    birthday,
-    gender,
-    role,
+    ...req.body,
     isVerified: false
   })
 
-  if (!user) {
-    res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'User already exists',
-      error: 'User already exists'
-    })
-    return
-  }
+  await emailOtpService.sendOtpToEmail(user.email, 'register', { subject: 'Verify Your Email' })
 
-  await emailOtpService.sendOtpToEmail(email, 'register', { subject: 'Verify Your Email' })
-
-  res
-    .status(HttpStatus.OK)
-    .json({ message: 'register successfully. Please check OTP in your email to verify', data: user })
+  res.status(HttpStatus.OK).json({
+    message: 'Register successfully. Please check OTP in your email to verify',
+    data: user
+  })
 })
 
 const getAllUser = expressAsyncHandler(async (req: Request, res: Response) => {
-  const query = req.query
+  const { page, limit, sortBy, sortOrder, role, status, isVerified, keyword } = req.query
 
-  const filter: any = {
-    page: query.page ? Number(query.page) : 1,
-    limit: query.limit ? Number(query.limit) : 10,
-    sortBy: query.sortBy,
-    sortOrder: query.sortOrder,
-
-    role: query.role,
-    status: query.status,
-    isVerified: query.isVerified !== undefined ? query.isVerified === 'true' : undefined,
-
-    keyword: query.keyword
+  const filter = {
+    page: page ? Number(page) : 1,
+    limit: limit ? Number(limit) : 10,
+    sortBy: sortBy as string,
+    sortOrder: sortOrder as 'asc' | 'desc',
+    role: role as any,
+    status: status as any,
+    isVerified: isVerified !== undefined ? isVerified === 'true' : undefined,
+    keyword: keyword as string
   }
 
   const result = await userService.getAllUser(filter)
@@ -64,8 +43,7 @@ const getAllUser = expressAsyncHandler(async (req: Request, res: Response) => {
 })
 
 const getUserById = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
-  const user = await userService.getUserById(id as string)
+  const user = await userService.getUserById(req.params.id as string)
   res.status(HttpStatus.OK).json({
     message: 'Get user successfully',
     data: user
@@ -73,18 +51,9 @@ const getUserById = expressAsyncHandler(async (req: Request, res: Response) => {
 })
 
 const deleteUser = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
-
-  if (!id) {
-    res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'User ID is required'
-    })
-    return
-  }
-
-  const user = await userService.deleteUser(id as string)
+  const result = await userService.deleteUser(req.params.id as string)
   res.status(HttpStatus.OK).json({
-    message: user.message
+    message: result.message
   })
 })
 
@@ -92,9 +61,7 @@ const getProfile = expressAsyncHandler(async (req: RequestWithUser, res: Respons
   const userId = req.user?._id
 
   if (!userId) {
-    res.status(HttpStatus.UNAUTHORIZED).json({
-      message: 'Unauthorized'
-    })
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
     return
   }
 
@@ -109,24 +76,11 @@ const updateProfile = expressAsyncHandler(async (req: RequestWithUser, res: Resp
   const userId = req.user?._id
 
   if (!userId) {
-    res.status(HttpStatus.UNAUTHORIZED).json({
-      message: 'Unauthorized'
-    })
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
     return
   }
 
-  const { fullName, phone, address, birthday, gender, description, avatar, isVerified } = req.body
-
-  const user = await userService.updateProfile(userId as string, {
-    fullName,
-    phone,
-    address,
-    birthday,
-    gender,
-    description,
-    avatar,
-    isVerified
-  })
+  const user = await userService.updateProfile(userId as string, req.body)
 
   res.status(HttpStatus.OK).json({
     message: 'Update profile successfully',
@@ -136,27 +90,7 @@ const updateProfile = expressAsyncHandler(async (req: RequestWithUser, res: Resp
 
 // update by admin
 const updateUser = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
-
-  if (!id) {
-    res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'User ID is required'
-    })
-    return
-  }
-
-  const { email, fullName, phone, address, birthday, gender, role, isVerified } = req.body
-
-  const user = await userService.updateUser(id as string, {
-    email: email as string,
-    fullName,
-    phone: phone as string,
-    address,
-    birthday,
-    gender,
-    role,
-    isVerified
-  })
+  const user = await userService.updateUser(req.params.id as string, req.body)
 
   res.status(HttpStatus.OK).json({
     message: 'Update user successfully',
@@ -168,9 +102,7 @@ const updatePassword = expressAsyncHandler(async (req: RequestWithUser, res: Res
   const userId = req.user?._id
 
   if (!userId) {
-    res.status(HttpStatus.UNAUTHORIZED).json({
-      message: 'Unauthorized'
-    })
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
     return
   }
 
@@ -194,14 +126,11 @@ const updateEmail = expressAsyncHandler(async (req: RequestWithUser, res: Respon
   const userId = req.user?._id
 
   if (!userId) {
-    res.status(HttpStatus.UNAUTHORIZED).json({
-      message: 'Unauthorized'
-    })
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
     return
   }
 
-  const { newEmail, otp } = req.body
-
+  const { oldEmail, newEmail, otp } = req.body
   if (!newEmail || !otp) {
     res.status(HttpStatus.BAD_REQUEST).json({
       message: 'New email and OTP are required'
@@ -209,8 +138,7 @@ const updateEmail = expressAsyncHandler(async (req: RequestWithUser, res: Respon
     return
   }
 
-  await emailOtpService.verifyEmail(newEmail, otp, 'change_email')
-
+  await emailOtpService.verifyEmail(oldEmail, otp, 'change_email')
   const user = await userService.updateEmail(userId as string, newEmail)
 
   res.status(HttpStatus.OK).json({
@@ -220,25 +148,13 @@ const updateEmail = expressAsyncHandler(async (req: RequestWithUser, res: Respon
 })
 
 const requestEmailChangeOtp = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const userId = req.user?._id
-
-  if (!userId) {
-    res.status(HttpStatus.UNAUTHORIZED).json({
-      message: 'Unauthorized'
-    })
-    return
-  }
-
-  const { newEmail } = req.body
-
+  const { newEmail, purpose } = req.body
   if (!newEmail) {
-    res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'New email is required'
-    })
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'New email is required' })
     return
   }
 
-  const result = await emailOtpService.sendOtpToEmail(newEmail, 'change_email', { subject: 'Verify Your New Email' })
+  const result = await emailOtpService.sendOtpToEmail(newEmail, purpose, { subject: 'Verify Your New Email' })
 
   res.status(HttpStatus.OK).json({
     message: result.message,

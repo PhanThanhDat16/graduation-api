@@ -14,8 +14,10 @@ const registerUser = async (userData: IUserRegister) => {
   const existingUser = await User.findOne({ email: userData.email }).lean()
 
   if (existingUser && existingUser.isVerified) {
-    return false
+    throw new Error('User already exists and is verified')
   }
+
+  const hashedPassword = await import('bcrypt').then((bcrypt) => bcrypt.hash(userData.password, 10))
 
   const seed = encodeURIComponent(userData.email || userData.fullName)
   const avatarUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`
@@ -25,10 +27,15 @@ const registerUser = async (userData: IUserRegister) => {
   if (!existingUser) {
     newUser = await User.create({
       ...userData,
+      password: hashedPassword,
       avatar: avatarUrl
     })
   } else if (!existingUser.isVerified) {
-    newUser = await User.findOneAndUpdate({ email: userData.email }, { ...userData, avatar: avatarUrl }, { new: true })
+    newUser = await User.findOneAndUpdate(
+      { email: userData.email },
+      { ...userData, password: hashedPassword, avatar: avatarUrl },
+      { new: true }
+    )
   }
 
   return {
