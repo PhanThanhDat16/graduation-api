@@ -3,9 +3,10 @@ import mongoose, { Document } from 'mongoose'
 const userSchema = new mongoose.Schema(
   {
     avatar: { type: String },
+    backgroundAvatar: { type: String },
     email: { type: String, unique: true, maxlength: 100 },
     phone: { type: String, maxlength: 15 },
-    password: { type: String, require: true, maxlength: 255 },
+    password: { type: String, maxlength: 255 },
     fullName: { type: String, require: true, maxlength: 100 },
     birthday: { type: Date },
     gender: { type: String, enum: ['female', 'male', 'other'], default: 'other' },
@@ -39,6 +40,7 @@ export const User = mongoose.model('User', userSchema)
 
 export interface IUser extends Document {
   avatar: string
+  backgroundAvatar: string
   email: string
   phone: string
   password: string
@@ -56,6 +58,6 @@ export interface IUser extends Document {
   ratingCount: number
   contractFavourite: string[]
   provider: string
-  googleId?: string,
+  googleId?: string
   isVerified?: boolean
 }

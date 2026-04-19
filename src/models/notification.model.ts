@@ -27,10 +27,8 @@ const notificationSchema = new mongoose.Schema<INotification>(
     }
   },
   {
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at'
-    }
+    versionKey: false,
+    strict: true
   }
 )
 

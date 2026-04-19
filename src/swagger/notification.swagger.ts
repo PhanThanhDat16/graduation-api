@@ -74,7 +74,7 @@
  *         is_read:
  *           type: boolean
  *           example: false
- *         created_at:
+ *         createdAt:
  *           type: string
  *           format: date-time
  *         updated_at:
@@ -114,7 +114,7 @@
  *         is_read:
  *           type: boolean
  *           example: false
- *         created_at:
+ *         createdAt:
  *           type: string
  *           format: date-time
  *         updated_at:
@@ -233,7 +233,7 @@
  *         name: sortBy
  *         schema:
  *           type: string
- *           default: created_at
+ *           default: createdAt
  *         description: Field to sort by
  *       - in: query
  *         name: sortOrder

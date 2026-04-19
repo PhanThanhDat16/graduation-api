@@ -12,6 +12,12 @@ export enum EStatusAccountUser {
   BANNED = 'banned'
 }
 
+export enum EStatusGenderUser {
+  FEMALE = 'female',
+  MALE = 'male',
+  OTHER = 'other'
+}
+
 export interface IUserConstants {
   email: string
   password: string
@@ -19,9 +25,10 @@ export interface IUserConstants {
   phone: string
   address: string
   birthday: string
-  gender: 'female' | 'male' | 'other'
+  gender: EStatusGenderUser
   role: EStatusRoleUser
   status?: EStatusAccountUser
+  backgroundAvatar?: string
   citizenIdNumber?: string
   ratingAvgNumber?: number
   ratingCountNumber?: number
@@ -36,8 +43,8 @@ export interface IUserRegister extends IUserConstants {
 }
 
 export interface UserFilter {
-  role?: 'freelancer' | 'contractor' | 'staff' | 'admin' | 'other'
-  status?: 'active' | 'inactive' | 'banned'
+  role?: EStatusRoleUser
+  status?: EStatusAccountUser
   isVerified?: boolean
 
   keyword?: string
@@ -49,9 +56,10 @@ export interface IUserUpdateProfile {
   phone?: string
   address?: string
   birthday?: string
-  gender?: 'female' | 'male' | 'other'
+  gender?: EStatusGenderUser
   description?: string
   avatar?: string
+  backgroundAvatar?: string
   role?: EStatusRoleUser
   isVerified?: boolean
 }
