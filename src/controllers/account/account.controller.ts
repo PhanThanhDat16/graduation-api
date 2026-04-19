@@ -162,7 +162,7 @@ const updateStatusBankAccountById = expressAsyncHandler(async (req: RequestWithU
         return
     }
 
-    if(existsAccount.userId !== userId) {
+    if(existsAccount.userId.toString() !== userId.toString()) {
         res.status(HttpStatus.BAD_REQUEST).json({
             message: 'You are not authorized to update this account'
         })

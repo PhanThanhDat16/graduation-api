@@ -132,18 +132,21 @@
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/ProjectObject'
- *         page:
- *           type: number
- *           example: 1
- *         limit:
- *           type: number
- *           example: 10
- *         totalPages:
- *           type: number
- *           example: 1
- *         totalItems:
- *           type: number
- *           example: 5
+ *         pagination:
+ *           type: object
+ *           properties:
+ *             total:
+ *               type: number
+ *               example: 5
+ *             page:
+ *               type: number
+ *               example: 1
+ *             limit:
+ *               type: number
+ *               example: 10
+ *             totalPages:
+ *               type: number
+ *               example: 1
  *
  *     ProjectErrorResponse:
  *       type: object
