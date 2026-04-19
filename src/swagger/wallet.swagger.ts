@@ -68,6 +68,9 @@
  *           type: string
  *           enum: [contractor, freelancer, admin]
  *           description: Who made this payment (for contract transactions)
+ *         payment_order_id:
+ *           type: string
+ *           description: Payment order ID if transaction is related to a payment order
  *         description:
  *           type: string
  *           description: Transaction description
@@ -117,13 +120,48 @@
  *               $ref: '#/components/schemas/WalletData'
  *             transaction:
  *               $ref: '#/components/schemas/TransactionData'
+ *     UserDataResponseInWithdraw:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         email:
+ *           type: string
+ *         avatar:
+ *           type: string
+ *     AccountDataResponseInWithdraw:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         userId:
+ *           $ref: '#/components/schemas/UserDataResponseInWithdraw'
+ *         accountNumber:
+ *           type: string
+ *         accountName:
+ *           type: string
+ *         bankShortName:
+ *           type: string
+ *         code:
+ *           type: string
+ *         logo:
+ *           type: string
+ *         status:
+ *           type: string
+ *           enum: [active, inactive]
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
  *     WithdrawRequestData:
  *       type: object
  *       properties:
  *         _id:
  *           type: string
- *         user_id:
- *           type: string
+ *         account_id:
+ *           $ref: '#/components/schemas/AccountDataResponseInWithdraw'
  *         amount:
  *           type: number
  *         status:
@@ -168,6 +206,9 @@
  *       type: object
  *       required: [amount]
  *       properties:
+ *         account_id:
+ *           type: string
+ *           example: 68f5a7b9c1d2e3f4a5b6c7d8
  *         amount:
  *           type: number
  *           example: 50000

@@ -97,7 +97,7 @@ const getMyTransactions = expressAsyncHandler(async (req: RequestWithUser, res: 
 // Create withdraw request
 const createWithdrawRequest = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const userId = req.user?._id
-  const { amount } = req.body
+  const { amount, account_id } = req.body
 
   if (!userId) {
     res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
@@ -109,7 +109,12 @@ const createWithdrawRequest = expressAsyncHandler(async (req: RequestWithUser, r
     return
   }
 
-  const request = await walletService.createWithdrawRequest(userId as string, amount)
+  if (!account_id) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Account ID is required' })
+    return
+  }
+
+  const request = await walletService.createWithdrawRequest(userId as string, amount, account_id as string)
 
   res.status(HttpStatus.OK).json({
     message: 'Withdraw request created successfully',
@@ -260,5 +265,5 @@ export const walletController = {
   getAllWithdrawRequests,
   processWithdrawRequest,
   getUserWallet,
-  adminDeposit
+  adminDeposit,
 }

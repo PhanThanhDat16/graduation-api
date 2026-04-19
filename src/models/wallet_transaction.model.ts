@@ -19,7 +19,7 @@ const walletTransactionSchema = new mongoose.Schema(
     payer_type: { type: String, enum: PAYER_TYPES },
 
     // Payment gateway fields from momo
-    payment_order_id: { type: String, unique: true },
+    payment_order_id: { type: String},
     payment_request_id: { type: String },
     payment_order_info: { type: String },
 

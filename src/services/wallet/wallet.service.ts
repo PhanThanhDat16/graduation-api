@@ -2,8 +2,10 @@ import mongoose from 'mongoose'
 import { Wallet } from '@/models/wallet.model'
 import { WalletTransaction } from '@/models/wallet_transaction.model'
 import { WithdrawRequest } from '@/models/withdraw_request.model'
+import Account from '@/models/account.model'
 import { paginate } from '@/utils/paginate'
 import { PaginationQuery } from '@/constants/pagination.constant'
+import { v4 as uuidv4 } from "uuid";
 import {
   ETransactionType,
   EPaymentMethod,
@@ -22,8 +24,8 @@ interface ContractTransactionOptions {
 }
 
 // const WALLET_FIELDS = '_id user_id balance createdAt updatedAt'
-const TRANSACTION_FIELDS = '_id wallet_id amount type method_payment status user_id contract_id payer_type description createdAt'
-const WITHDRAW_REQUEST_FIELDS = '_id user_id amount status admin_id createdAt processed_at'
+const TRANSACTION_FIELDS = '_id wallet_id amount type method_payment status user_id contract_id payer_type payment_order_id description createdAt'
+const WITHDRAW_REQUEST_FIELDS = '_id account_id amount status admin_id createdAt processed_at'
 
 // Get or create wallet for user
 const getOrCreateWallet = async (userId: string) => {
@@ -79,8 +81,11 @@ const deposit = async (
     throw new Error('Amount must be greater than 0')
   }
 
+
   const session = await mongoose.startSession()
   session.startTransaction()
+
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
 
   try {
     const wallet = await getOrCreateWallet(userId)
@@ -102,6 +107,7 @@ const deposit = async (
           amount,
           type: ETransactionType.DEPOSIT,
           method_payment: methodPayment,
+          payment_order_id: orderId,
           status: ETransactionStatus.COMPLETED,
           user_id: relatedUserId ? new mongoose.Types.ObjectId(relatedUserId) : undefined
         }
@@ -132,6 +138,8 @@ const withdraw = async (userId: string, amount: number, methodPayment?: EPayment
   const session = await mongoose.startSession()
   session.startTransaction()
 
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+
   try {
     const wallet = await getOrCreateWallet(userId)
 
@@ -156,6 +164,7 @@ const withdraw = async (userId: string, amount: number, methodPayment?: EPayment
           amount: -amount,
           type: ETransactionType.WITHDRAW,
           method_payment: methodPayment || EPaymentMethod.WALLET,
+          payment_order_id: orderId,
           status: ETransactionStatus.COMPLETED,
           user_id: relatedUserId ? new mongoose.Types.ObjectId(relatedUserId) : undefined
         }
@@ -191,6 +200,8 @@ const escrowDeposit = async (
   const session = await mongoose.startSession()
   session.startTransaction()
 
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+
   try {
     const wallet = await getOrCreateWallet(userId)
 
@@ -215,6 +226,7 @@ const escrowDeposit = async (
           amount: -amount,
           type: ETransactionType.ESCROW_DEPOSIT,
           method_payment: EPaymentMethod.WALLET,
+          payment_order_id: orderId,
           status: ETransactionStatus.COMPLETED,
           user_id: new mongoose.Types.ObjectId(toUserId),
           contract_id: options?.contract_id ? new mongoose.Types.ObjectId(options.contract_id) : undefined,
@@ -253,6 +265,8 @@ const escrowRelease = async (
   const session = await mongoose.startSession()
   session.startTransaction()
 
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+
   try {
     const wallet = await getOrCreateWallet(freelancerUserId)
 
@@ -274,6 +288,7 @@ const escrowRelease = async (
           type: ETransactionType.ESCROW_RELEASE,
           method_payment: EPaymentMethod.WALLET,
           status: ETransactionStatus.COMPLETED,
+          payment_order_id: orderId,
           user_id: new mongoose.Types.ObjectId(fromUserId),
           contract_id: options?.contract_id ? new mongoose.Types.ObjectId(options.contract_id) : undefined,
           payer_type: options?.payer_type,
@@ -311,6 +326,8 @@ const refund = async (
   const session = await mongoose.startSession()
   session.startTransaction()
 
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+
   try {
     const wallet = await getOrCreateWallet(userId)
 
@@ -331,6 +348,7 @@ const refund = async (
           amount,
           type: ETransactionType.REFUND,
           method_payment: EPaymentMethod.WALLET,
+          payment_order_id: orderId,
           status: ETransactionStatus.COMPLETED,
           user_id: new mongoose.Types.ObjectId(fromUserId),
           contract_id: options?.contract_id ? new mongoose.Types.ObjectId(options.contract_id) : undefined,
@@ -361,10 +379,13 @@ const createTransaction = async (data: ICreateTransaction) => {
     throw new Error('Invalid wallet ID format')
   }
 
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+
   const transaction = await WalletTransaction.create({
     wallet_id: new mongoose.Types.ObjectId(data.wallet_id),
     amount: data.amount,
     type: data.type,
+    payment_order_id: orderId,
     method_payment: data.method_payment,
     status: data.status || ETransactionStatus.PENDING,
     user_id: data.user_id ? new mongoose.Types.ObjectId(data.user_id) : undefined
@@ -395,13 +416,22 @@ const getTransactionHistory = async (userId: string, query: PaginationQuery & Wa
 }
 
 // Create withdraw request
-const createWithdrawRequest = async (userId: string, amount: number) => {
+const createWithdrawRequest = async (userId: string, amount: number, accountId: string) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error('Invalid user ID format')
   }
 
+  if (!mongoose.Types.ObjectId.isValid(accountId)) {
+    throw new Error('Invalid account ID format')
+  }
+
   if (amount <= 0) {
     throw new Error('Amount must be greater than 0')
+  }
+
+  const account = await Account.findOne({ _id: accountId, userId })
+  if (!account) {
+    throw new Error('Bank account not found or does not belong to user')
   }
 
   const wallet = await getOrCreateWallet(userId)
@@ -411,14 +441,16 @@ const createWithdrawRequest = async (userId: string, amount: number) => {
   }
 
   // Check pending request
-  const pendingRequest = await WithdrawRequest.findOne({ user_id: userId, status: EWithdrawStatus.PENDING })
+  const userAccounts = await Account.find({ userId }).select('_id')
+  const accountIds = userAccounts.map(a => a._id)
+  const pendingRequest = await WithdrawRequest.findOne({ account_id: { $in: accountIds }, status: EWithdrawStatus.PENDING })
 
   if (pendingRequest) {
     throw new Error('You already have a pending withdraw request')
   }
 
   const request = await WithdrawRequest.create({
-    user_id: new mongoose.Types.ObjectId(userId),
+    account_id: new mongoose.Types.ObjectId(accountId),
     amount,
     status: EWithdrawStatus.PENDING
   })
@@ -432,13 +464,16 @@ const getMyWithdrawRequests = async (userId: string, query: PaginationQuery & Wi
     throw new Error('Invalid user ID format')
   }
 
-  const filter: any = { user_id: new mongoose.Types.ObjectId(userId) }
+  const userAccounts = await Account.find({ userId }).select('_id')
+  const filter: any = { account_id: { $in: userAccounts.map(a => a._id) } }
 
   if (query.status) {
     filter.status = query.status
   }
 
-  return await paginate(WithdrawRequest, filter, { ...query, sortBy: 'createdAt', sortOrder: 'desc' }, WITHDRAW_REQUEST_FIELDS)
+  const result = await paginate(WithdrawRequest, filter, { ...query, sortBy: 'createdAt', sortOrder: 'desc' }, WITHDRAW_REQUEST_FIELDS)
+  await WithdrawRequest.populate(result.data, { path: 'account_id', populate: { path: 'userId', select: 'name avatar email' } })
+  return result
 }
 
 // Get all withdraw requests (admin)
@@ -450,10 +485,13 @@ const getAllWithdrawRequests = async (query: PaginationQuery & WithdrawRequestFi
   }
 
   if (query.user_id) {
-    filter.user_id = new mongoose.Types.ObjectId(query.user_id)
+    const userAccounts = await Account.find({ userId: query.user_id }).select('_id')
+    filter.account_id = { $in: userAccounts.map(a => a._id) }
   }
 
-  return await paginate(WithdrawRequest, filter, { ...query, sortBy: 'createdAt', sortOrder: 'desc' }, WITHDRAW_REQUEST_FIELDS)
+  const result = await paginate(WithdrawRequest, filter, { ...query, sortBy: 'createdAt', sortOrder: 'desc' }, WITHDRAW_REQUEST_FIELDS)
+  await WithdrawRequest.populate(result.data, { path: 'account_id', populate: { path: 'userId', select: 'name avatar email' } })
+  return result
 }
 
 // Process withdraw request (admin)
@@ -466,7 +504,7 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
     throw new Error('Invalid admin ID format')
   }
 
-  const request = await WithdrawRequest.findById(requestId)
+  const request = await WithdrawRequest.findById(requestId).populate('account_id')
 
   if (!request) {
     throw new Error('Withdraw request not found')
@@ -476,13 +514,18 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
     throw new Error('This request has already been processed')
   }
 
+  const requestUserId = (request.account_id as any)?.userId
+  if (!requestUserId) throw new Error('Account owner not found')
+
   const session = await mongoose.startSession()
   session.startTransaction()
+
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
 
   try {
     if (status === EWithdrawStatus.APPROVED || status === EWithdrawStatus.PAID) {
       // Deduct from wallet
-      const wallet = await Wallet.findOne({ user_id: request.user_id })
+      const wallet = await Wallet.findOne({ user_id: requestUserId })
 
       if (!wallet) {
         throw new Error('Wallet not found')
@@ -502,8 +545,9 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
             amount: -request.amount,
             type: ETransactionType.WITHDRAW,
             method_payment: EPaymentMethod.WALLET,
+            payment_order_id: orderId,
             status: ETransactionStatus.COMPLETED,
-            user_id: request.user_id
+            user_id: requestUserId
           }
         ],
         { session }
@@ -537,13 +581,15 @@ const cancelWithdrawRequest = async (requestId: string, userId: string) => {
     throw new Error('Invalid request ID format')
   }
 
-  const request = await WithdrawRequest.findById(requestId)
+  const request = await WithdrawRequest.findById(requestId).populate('account_id')
 
   if (!request) {
     throw new Error('Withdraw request not found')
   }
 
-  if (request.user_id.toString() !== userId) {
+  const requestUserId = (request.account_id as any)?.userId?.toString()
+
+  if (requestUserId !== userId) {
     throw new Error('You are not authorized to cancel this request')
   }
 
@@ -582,5 +628,5 @@ export const walletService = {
   getAllWithdrawRequests,
   processWithdrawRequest,
   cancelWithdrawRequest,
-  getTransactionsByContractId
+  getTransactionsByContractId,
 }

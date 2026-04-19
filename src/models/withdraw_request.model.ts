@@ -4,7 +4,7 @@ export const WITHDRAW_STATUS = ['pending', 'approved', 'rejected', 'paid'] as co
 
 const withdrawRequestSchema = new mongoose.Schema(
   {
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    account_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true },
     amount: { type: Number, required: true, min: 0 },
     status: { type: String, enum: WITHDRAW_STATUS, default: 'pending' },
     admin_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
@@ -17,12 +17,12 @@ const withdrawRequestSchema = new mongoose.Schema(
   }
 )
 
-withdrawRequestSchema.index({ user_id: 1, status: 1 })
+withdrawRequestSchema.index({ account_id: 1, status: 1 })
 
 export const WithdrawRequest = mongoose.model('WithdrawRequest', withdrawRequestSchema)
 
 export interface IWithdrawRequest extends Document {
-  user_id: mongoose.Types.ObjectId
+  account_id: mongoose.Types.ObjectId
   amount: number
   status: (typeof WITHDRAW_STATUS)[number]
   admin_id?: mongoose.Types.ObjectId
