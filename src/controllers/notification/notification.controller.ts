@@ -133,7 +133,7 @@ const getMyNotifications = expressAsyncHandler(async (req: RequestWithUser, res:
   const filter: any = {
     page: query.page ? Number(query.page) : 1,
     limit: query.limit ? Number(query.limit) : 10,
-    sortBy: query.sortBy || 'created_at',
+    sortBy: query.sortBy || 'createdAt',
     sortOrder: query.sortOrder || 'desc',
     type: query.type,
     is_read: query.is_read !== undefined ? query.is_read === 'true' : undefined
@@ -169,7 +169,7 @@ const getNotificationsByUserId = expressAsyncHandler(async (req: RequestWithUser
   const filter: any = {
     page: query.page ? Number(query.page) : 1,
     limit: query.limit ? Number(query.limit) : 10,
-    sortBy: query.sortBy || 'created_at',
+    sortBy: query.sortBy || 'createdAt',
     sortOrder: query.sortOrder || 'desc',
     type: query.type,
     is_read: query.is_read !== undefined ? query.is_read === 'true' : undefined

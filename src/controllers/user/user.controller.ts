@@ -40,19 +40,17 @@ const register = expressAsyncHandler(async (req: Request, res: Response) => {
 })
 
 const getAllUser = expressAsyncHandler(async (req: Request, res: Response) => {
-  const query = req.query
+  const { page, limit, sortBy, sortOrder, role, status, isVerified, keyword } = req.query
 
-  const filter: any = {
-    page: query.page ? Number(query.page) : 1,
-    limit: query.limit ? Number(query.limit) : 10,
-    sortBy: query.sortBy,
-    sortOrder: query.sortOrder,
-
-    role: query.role,
-    status: query.status,
-    isVerified: query.isVerified !== undefined ? query.isVerified === 'true' : undefined,
-
-    keyword: query.keyword
+  const filter = {
+    page: page ? Number(page) : 1,
+    limit: limit ? Number(limit) : 10,
+    sortBy: sortBy as string,
+    sortOrder: sortOrder as 'asc' | 'desc',
+    role: role as any,
+    status: status as any,
+    isVerified: isVerified !== undefined ? isVerified === 'true' : undefined,
+    keyword: keyword as string
   }
 
   const result = await userService.getAllUser(filter)
@@ -64,8 +62,7 @@ const getAllUser = expressAsyncHandler(async (req: Request, res: Response) => {
 })
 
 const getUserById = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
-  const user = await userService.getUserById(id as string)
+  const user = await userService.getUserById(req.params.id as string)
   res.status(HttpStatus.OK).json({
     message: 'Get user successfully',
     data: user
@@ -115,7 +112,7 @@ const updateProfile = expressAsyncHandler(async (req: RequestWithUser, res: Resp
     return
   }
 
-  const { fullName, phone, address, birthday, gender, description, avatar, isVerified } = req.body
+  const { fullName, phone, address, birthday, gender, description, avatar, backgroundAvatar, isVerified } = req.body
 
   const user = await userService.updateProfile(userId as string, {
     fullName,
@@ -125,6 +122,7 @@ const updateProfile = expressAsyncHandler(async (req: RequestWithUser, res: Resp
     gender,
     description,
     avatar,
+    backgroundAvatar,
     isVerified
   })
 
@@ -221,6 +219,7 @@ const updateEmail = expressAsyncHandler(async (req: RequestWithUser, res: Respon
 
 const requestEmailChangeOtp = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const userId = req.user?._id
+  const { newEmail, purpose } = req.body
 
   if (!userId) {
     res.status(HttpStatus.UNAUTHORIZED).json({
@@ -229,8 +228,6 @@ const requestEmailChangeOtp = expressAsyncHandler(async (req: RequestWithUser, r
     return
   }
 
-  const { newEmail } = req.body
-
   if (!newEmail) {
     res.status(HttpStatus.BAD_REQUEST).json({
       message: 'New email is required'
@@ -238,7 +235,7 @@ const requestEmailChangeOtp = expressAsyncHandler(async (req: RequestWithUser, r
     return
   }
 
-  const result = await emailOtpService.sendOtpToEmail(newEmail, 'change_email', { subject: 'Verify Your New Email' })
+  const result = await emailOtpService.sendOtpToEmail(newEmail, purpose, { subject: 'Verify Your New Email' })
 
   res.status(HttpStatus.OK).json({
     message: result.message,

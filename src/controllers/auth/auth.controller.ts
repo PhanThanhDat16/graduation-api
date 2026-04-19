@@ -98,11 +98,10 @@ const login = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const logout = asyncHandler(async (req: Request, res: Response) => {
-  const authorizationHeader = req.headers.authorization
-  const accessToken = authorizationHeader?.split(' ')[1]
+  const cookieRefreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME] as string
 
-  if (accessToken) {
-    await refreshTokenService.deleteByAccessToken(accessToken)
+  if (cookieRefreshToken) {
+    await refreshTokenService.delete(cookieRefreshToken)
   }
 
   res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, getRefreshCookieOptions())
@@ -195,7 +194,7 @@ const forgotPassword_verifyOtp = asyncHandler(async (req: Request, res: Response
 
   const verifyOtp = await emailOtpService.verifyEmail(email, otp, 'forgot_password')
 
-  if(!verifyOtp){
+  if (!verifyOtp) {
     res.status(HttpStatus.BAD_REQUEST).json({
       message: 'Verify OTP failed'
     })
@@ -203,7 +202,7 @@ const forgotPassword_verifyOtp = asyncHandler(async (req: Request, res: Response
   }
   await emailOtpService.sendPasswordToEmail(email)
 
-  res.status(HttpStatus.OK).json({ message: 'OTP verified. Please check your email for the new password'})
+  res.status(HttpStatus.OK).json({ message: 'OTP verified. Please check your email for the new password' })
 })
 
 interface GoogleUser {

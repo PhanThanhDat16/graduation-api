@@ -1,28 +1,50 @@
-import { Server } from 'socket.io'
+import { Server, Socket } from 'socket.io'
 import http from 'http'
 
-let io: Server
+import { setSocketServer } from './io'
+import { chatRoomForGroup } from './chatEmit'
 
-export const setupSocket = (server: http.Server) => {
-  io = new Server(server, {
+export function setupSocket(server: http.Server): void {
+  const io = new Server(server, {
     cors: {
-      origin: '*',
-      methods: ['GET', 'POST']
+      origin: process.env.SOCKET_CORS_ORIGIN || '*',
+      methods: ['GET', 'POST'],
+      credentials: true
     }
   })
 
-  io.on('connection', (socket) => {
-    console.log('🟢 A user connected:', socket.id)
+  // Store reference to IO instance
+  setSocketServer(io)
 
-    socket.on('disconnect', () => {
-      console.log('🔴 User disconnected:', socket.id)
+  // Global connection handler
+  io.on('connection', (socket: Socket) => {
+    console.log(`[Socket] User connected: ${socket.id}`)
+
+    // JOIN CONVERSATION
+    socket.on('join_conversation', (data) => {
+      const { groupId } = data
+      const room = chatRoomForGroup(groupId)
+      socket.join(room)
+    })
+
+    // STAFF JOIN CONVERSATION GENERAL (to response guest)
+    socket.on('staff_join_conv_general', () => {
+      socket.join('staff_join_conv_general')
+    })
+
+    // USERS, STAFF JOIN CONVERSATION (to response internal)
+    socket.on('user_join_conv', (data) => {
+      const { groupId } = data
+      const room = chatRoomForGroup(groupId)
+      socket.join(room)
+    })
+
+    socket.on('disconnect', (reason) => {
+      console.log(`[Socket] User disconnected: ${socket.id} - Reason: ${reason}`)
+    })
+
+    socket.on('error', (error) => {
+      console.error(`[Socket] Error from ${socket.id}:`, error)
     })
   })
-}
-
-export const getIO = (): Server => {
-  if (!io) {
-    throw new Error('Socket.io has not been initialized')
-  }
-  return io
 }
