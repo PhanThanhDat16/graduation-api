@@ -76,7 +76,7 @@ const getProjectById = expressAsyncHandler(async (req: Request, res: Response) =
 })
 
 const getProjectByContractorId = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const contractorId = req.user?.id
+  const contractorId = req.user?._id
 
   if (!contractorId) {
     res.status(HttpStatus.BAD_REQUEST).json({

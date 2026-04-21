@@ -4,7 +4,8 @@ export const paginate = async <T>(
   model: any,
   filter: any,
   query: PaginationQuery,
-  select: string
+  select: string,
+  populate?: any
 ): Promise<PaginationResult<T>> => {
   const page = Number(query.page) || 1
   const limit = Number(query.limit) || 10
@@ -13,14 +14,18 @@ export const paginate = async <T>(
   const sortField = query.sortBy || 'createdAt'
   const sortOrder = query.sortOrder === 'asc' ? 1 : -1
 
-  const [data, total] = await Promise.all([
-    model.find(filter)
-      .select(select)
-      .sort({ [sortField]: sortOrder })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
+  let mongooseQuery = model.find(filter)
+    .select(select)
+    .sort({ [sortField]: sortOrder })
+    .skip(skip)
+    .limit(limit)
 
+  if (populate) {
+    mongooseQuery = mongooseQuery.populate(populate)
+  }
+
+  const [data, total] = await Promise.all([
+    mongooseQuery.lean(),
     model.countDocuments(filter)
   ])
 
