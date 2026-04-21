@@ -46,7 +46,8 @@ const getAllProject = async (query: ProjectQuery) => {
     ]
   }
 
-  return await paginate(Project, filter, query, PROJECT_SAFE_FIELDS)
+
+  return await paginate(Project, filter, query, PROJECT_SAFE_FIELDS, { path: 'contractorId', select: 'fullName email avatar' })
 }
 
 const getProjectById = async (id: string) => {
@@ -60,7 +61,7 @@ const getProjectById = async (id: string) => {
 }
 
 const getProjectByContractorId = async (contractorId: string) => {
-  const projects = await Project.find({ contractorId }).select(PROJECT_SAFE_FIELDS)
+  const projects = await Project.find({ contractorId }).select(PROJECT_SAFE_FIELDS).populate('contractorId', 'fullName email avatar')
 
   return projects || []
 }
