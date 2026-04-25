@@ -87,6 +87,7 @@ export const conversationService = {
     // Create chat group with ownerId pointing to guest user
     const chatGroup = await ChatGroup.create({
       ownerId: guestUser._id,
+      guestName: guestUser.fullName,
       type: 'guest_support'
     } as any)
 
