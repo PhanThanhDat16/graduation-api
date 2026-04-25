@@ -231,6 +231,52 @@
  *           type: string
  *           enum: [momo, vnpay, wallet]
  *           example: wallet
+ *     WalletWithUser:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         user_id:
+ *           type: object
+ *           properties:
+ *             _id:
+ *               type: string
+ *             fullName:
+ *               type: string
+ *             email:
+ *               type: string
+ *             avatar:
+ *               type: string
+ *             role:
+ *               type: string
+ *         balance:
+ *           type: number
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *     WalletListResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *         data:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/WalletWithUser'
+ *         pagination:
+ *           type: object
+ *           properties:
+ *             page:
+ *               type: number
+ *             limit:
+ *               type: number
+ *             total:
+ *               type: number
+ *             totalPages:
+ *               type: number
  */
 
 /**
@@ -432,10 +478,11 @@
 
 /**
  * @openapi
- * /api/wallets/admin/withdraw-requests:
+ * /api/wallets/staff/withdraw-requests:
  *   get:
  *     tags: [Wallet]
- *     summary: "[Admin] Get all withdraw requests"
+ *     summary: "[Staff] Get all withdraw requests"
+ *     description: Retrieve all user withdraw requests. Staff only.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -471,10 +518,11 @@
 
 /**
  * @openapi
- * /api/wallets/admin/withdraw-requests/{id}:
+ * /api/wallets/staff/withdraw-requests/{id}:
  *   put:
  *     tags: [Wallet]
- *     summary: "[Admin] Process withdraw request"
+ *     summary: "[Staff] Process withdraw request"
+ *     description: Approve, reject or mark a withdraw request as paid. Staff only.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -504,10 +552,11 @@
 
 /**
  * @openapi
- * /api/wallets/admin/users/{userId}:
+ * /api/wallets/staff/users/{userId}:
  *   get:
  *     tags: [Wallet]
- *     summary: "[Admin] Get user wallet"
+ *     summary: "[Staff] Get user wallet"
+ *     description: View wallet details of a specific user. Staff only.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -531,10 +580,11 @@
 
 /**
  * @openapi
- * /api/wallets/admin/users/{userId}/deposit:
+ * /api/wallets/staff/users/{userId}/deposit:
  *   post:
  *     tags: [Wallet]
- *     summary: "[Admin] Deposit to user wallet"
+ *     summary: "[Staff] Deposit to user wallet"
+ *     description: Manually deposit an amount into a user's wallet. Staff only.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -558,6 +608,71 @@
  *               $ref: '#/components/schemas/DepositResponse'
  *       400:
  *         description: User ID is required / Amount must be greater than 0
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @openapi
+ * /api/wallets/admin/wallets:
+ *   get:
+ *     tags: [Wallet]
+ *     summary: "[Admin] List all wallets"
+ *     description: Retrieve paginated list of all user wallets with user info. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: user_id
+ *         schema:
+ *           type: string
+ *         description: Filter by specific user ID
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/WalletListResponse'
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @openapi
+ * /api/wallets/admin/wallets/{userId}:
+ *   get:
+ *     tags: [Wallet]
+ *     summary: "[Admin] Get wallet detail by userId"
+ *     description: View detailed wallet information for a specific user. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The user ID to fetch wallet for
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/WalletResponse'
+ *       400:
+ *         description: User ID is required
  *       401:
  *         description: Unauthorized
  */
