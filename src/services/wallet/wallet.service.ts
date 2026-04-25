@@ -2,10 +2,10 @@ import mongoose from 'mongoose'
 import { Wallet } from '@/models/wallet.model'
 import { WalletTransaction } from '@/models/wallet_transaction.model'
 import { WithdrawRequest } from '@/models/withdraw_request.model'
-import Account from '@/models/account.model'
+import Account from '@/models/aaccount_bank.model'
 import { paginate } from '@/utils/paginate'
 import { PaginationQuery } from '@/constants/pagination.constant'
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4 } from 'uuid'
 import {
   ETransactionType,
   EPaymentMethod,
@@ -24,7 +24,8 @@ interface ContractTransactionOptions {
 }
 
 // const WALLET_FIELDS = '_id user_id balance createdAt updatedAt'
-const TRANSACTION_FIELDS = '_id wallet_id amount type method_payment status user_id contract_id payer_type payment_order_id description createdAt'
+const TRANSACTION_FIELDS =
+  '_id wallet_id amount type method_payment status user_id contract_id payer_type payment_order_id description createdAt'
 const WITHDRAW_REQUEST_FIELDS = '_id account_id amount status admin_id createdAt processed_at'
 
 // Get or create wallet for user
@@ -71,21 +72,15 @@ const getBalance = async (userId: string) => {
 }
 
 // Deposit money to wallet
-const deposit = async (
-  userId: string,
-  amount: number,
-  methodPayment: EPaymentMethod,
-  relatedUserId?: string
-) => {
+const deposit = async (userId: string, amount: number, methodPayment: EPaymentMethod, relatedUserId?: string) => {
   if (amount <= 0) {
     throw new Error('Amount must be greater than 0')
   }
 
-
   const session = await mongoose.startSession()
   session.startTransaction()
 
-  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`
 
   try {
     const wallet = await getOrCreateWallet(userId)
@@ -138,7 +133,7 @@ const withdraw = async (userId: string, amount: number, methodPayment?: EPayment
   const session = await mongoose.startSession()
   session.startTransaction()
 
-  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`
 
   try {
     const wallet = await getOrCreateWallet(userId)
@@ -200,7 +195,7 @@ const escrowDeposit = async (
   const session = await mongoose.startSession()
   session.startTransaction()
 
-  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`
 
   try {
     const wallet = await getOrCreateWallet(userId)
@@ -265,7 +260,7 @@ const escrowRelease = async (
   const session = await mongoose.startSession()
   session.startTransaction()
 
-  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`
 
   try {
     const wallet = await getOrCreateWallet(freelancerUserId)
@@ -313,12 +308,7 @@ const escrowRelease = async (
 }
 
 // Refund money (from dispute)
-const refund = async (
-  userId: string,
-  amount: number,
-  fromUserId: string,
-  options?: ContractTransactionOptions
-) => {
+const refund = async (userId: string, amount: number, fromUserId: string, options?: ContractTransactionOptions) => {
   if (amount <= 0) {
     throw new Error('Amount must be greater than 0')
   }
@@ -326,7 +316,7 @@ const refund = async (
   const session = await mongoose.startSession()
   session.startTransaction()
 
-  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`
 
   try {
     const wallet = await getOrCreateWallet(userId)
@@ -379,7 +369,7 @@ const createTransaction = async (data: ICreateTransaction) => {
     throw new Error('Invalid wallet ID format')
   }
 
-  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`
 
   const transaction = await WalletTransaction.create({
     wallet_id: new mongoose.Types.ObjectId(data.wallet_id),
@@ -412,7 +402,12 @@ const getTransactionHistory = async (userId: string, query: PaginationQuery & Wa
     filter.status = query.status
   }
 
-  return await paginate(WalletTransaction, filter, { ...query, sortBy: 'createdAt', sortOrder: 'desc' }, TRANSACTION_FIELDS)
+  return await paginate(
+    WalletTransaction,
+    filter,
+    { ...query, sortBy: 'createdAt', sortOrder: 'desc' },
+    TRANSACTION_FIELDS
+  )
 }
 
 // Create withdraw request
@@ -442,8 +437,11 @@ const createWithdrawRequest = async (userId: string, amount: number, accountId: 
 
   // Check pending request
   const userAccounts = await Account.find({ userId }).select('_id')
-  const accountIds = userAccounts.map(a => a._id)
-  const pendingRequest = await WithdrawRequest.findOne({ account_id: { $in: accountIds }, status: EWithdrawStatus.PENDING })
+  const accountIds = userAccounts.map((a) => a._id)
+  const pendingRequest = await WithdrawRequest.findOne({
+    account_id: { $in: accountIds },
+    status: EWithdrawStatus.PENDING
+  })
 
   if (pendingRequest) {
     throw new Error('You already have a pending withdraw request')
@@ -465,14 +463,22 @@ const getMyWithdrawRequests = async (userId: string, query: PaginationQuery & Wi
   }
 
   const userAccounts = await Account.find({ userId }).select('_id')
-  const filter: any = { account_id: { $in: userAccounts.map(a => a._id) } }
+  const filter: any = { account_id: { $in: userAccounts.map((a) => a._id) } }
 
   if (query.status) {
     filter.status = query.status
   }
 
-  const result = await paginate(WithdrawRequest, filter, { ...query, sortBy: 'createdAt', sortOrder: 'desc' }, WITHDRAW_REQUEST_FIELDS)
-  await WithdrawRequest.populate(result.data, { path: 'account_id', populate: { path: 'userId', select: 'name avatar email' } })
+  const result = await paginate(
+    WithdrawRequest,
+    filter,
+    { ...query, sortBy: 'createdAt', sortOrder: 'desc' },
+    WITHDRAW_REQUEST_FIELDS
+  )
+  await WithdrawRequest.populate(result.data, {
+    path: 'account_id',
+    populate: { path: 'userId', select: 'name avatar email' }
+  })
   return result
 }
 
@@ -486,11 +492,19 @@ const getAllWithdrawRequests = async (query: PaginationQuery & WithdrawRequestFi
 
   if (query.user_id) {
     const userAccounts = await Account.find({ userId: query.user_id }).select('_id')
-    filter.account_id = { $in: userAccounts.map(a => a._id) }
+    filter.account_id = { $in: userAccounts.map((a) => a._id) }
   }
 
-  const result = await paginate(WithdrawRequest, filter, { ...query, sortBy: 'createdAt', sortOrder: 'desc' }, WITHDRAW_REQUEST_FIELDS)
-  await WithdrawRequest.populate(result.data, { path: 'account_id', populate: { path: 'userId', select: 'name avatar email' } })
+  const result = await paginate(
+    WithdrawRequest,
+    filter,
+    { ...query, sortBy: 'createdAt', sortOrder: 'desc' },
+    WITHDRAW_REQUEST_FIELDS
+  )
+  await WithdrawRequest.populate(result.data, {
+    path: 'account_id',
+    populate: { path: 'userId', select: 'name avatar email' }
+  })
   return result
 }
 
@@ -520,7 +534,7 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
   const session = await mongoose.startSession()
   session.startTransaction()
 
-  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`;
+  const orderId = `TRANS-${Date.now()}-${uuidv4().slice(0, 8)}`
 
   try {
     if (status === EWithdrawStatus.APPROVED || status === EWithdrawStatus.PAID) {
@@ -609,7 +623,12 @@ const getTransactionsByContractId = async (contractId: string, query: Pagination
   }
 
   const filter = { contract_id: new mongoose.Types.ObjectId(contractId) }
-  return await paginate(WalletTransaction, filter, { ...query, sortBy: 'createdAt', sortOrder: 'desc' }, TRANSACTION_FIELDS)
+  return await paginate(
+    WalletTransaction,
+    filter,
+    { ...query, sortBy: 'createdAt', sortOrder: 'desc' },
+    TRANSACTION_FIELDS
+  )
 }
 
 export const walletService = {
@@ -628,5 +647,5 @@ export const walletService = {
   getAllWithdrawRequests,
   processWithdrawRequest,
   cancelWithdrawRequest,
-  getTransactionsByContractId,
+  getTransactionsByContractId
 }
