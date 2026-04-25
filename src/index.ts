@@ -27,7 +27,7 @@ import { routerAdminHistory } from './routers/admin_historyAPI.router'
 import { routerNotification } from './routers/notificationAPI.router'
 import { routerApplication } from './routers/applicationAPI.router'
 import { setupSocket } from './socket/socket'
-import { routerAccount } from './routers/accountAPI.router'
+import { routerAccountBank } from './routers/account_bankAPI.router'
 import { routerChat } from './routers/chatAPI.router'
 import { routerConversation } from './routers/conversationAPI.router'
 
@@ -101,7 +101,7 @@ app.use('/api/reviews', routerReview)
 app.use('/api/admin-histories', routerAdminHistory)
 app.use('/api/notifications', routerNotification)
 app.use('/api/applications', routerApplication)
-app.use('/api/accounts', routerAccount)
+app.use('/api/accounts/bank', routerAccountBank)
 
 app.use('/api/chat', routerChat)
 app.use('/api/conversations', routerConversation)

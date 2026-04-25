@@ -1,7 +1,7 @@
 /**
  * @openapi
  * tags:
- *   - name: Accounts
+ *   - name: AccountsBank
  *     description: Bank account management endpoints
  */
 
@@ -114,9 +114,9 @@
 
 /**
  * @openapi
- * /api/accounts:
+ * /api/accounts/bank:
  *   post:
- *     tags: [Accounts]
+ *     tags: [AccountsBank]
  *     summary: Create a new bank account
  *     security:
  *       - bearerAuth: []
@@ -141,9 +141,9 @@
 
 /**
  * @openapi
- * /api/accounts/my-accounts:
+ * /api/accounts/bank/my-accounts:
  *   get:
- *     tags: [Accounts]
+ *     tags: [AccountsBank]
  *     summary: Get all bank accounts of the current user
  *     security:
  *       - bearerAuth: []
@@ -160,9 +160,9 @@
 
 /**
  * @openapi
- * /api/accounts/status/{id}:
+ * /api/accounts/bank/status/{id}:
  *   patch:
- *     tags: [Accounts]
+ *     tags: [AccountsBank]
  *     summary: Update status of a bank account (active / inactive)
  *     security:
  *       - bearerAuth: []
@@ -194,9 +194,9 @@
 
 /**
  * @openapi
- * /api/accounts/{id}:
+ * /api/accounts/bank/{id}:
  *   get:
- *     tags: [Accounts]
+ *     tags: [AccountsBank]
  *     summary: Get a bank account by ID
  *     security:
  *       - bearerAuth: []
@@ -219,7 +219,7 @@
  *       401:
  *         description: Unauthorized
  *   put:
- *     tags: [Accounts]
+ *     tags: [AccountsBank]
  *     summary: Update account number or account name
  *     security:
  *       - bearerAuth: []
@@ -248,7 +248,7 @@
  *       401:
  *         description: Unauthorized
  *   delete:
- *     tags: [Accounts]
+ *     tags: [AccountsBank]
  *     summary: Delete a bank account
  *     security:
  *       - bearerAuth: []
