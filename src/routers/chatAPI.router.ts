@@ -4,8 +4,8 @@ import express from 'express'
 
 const router = express.Router()
 
-router.post('/groups', requireAuth, chatController.createGroup)
-router.get('/groups', requireAuth, chatController.listGroups)
+router.post('/:groupId/messages', chatController.createMessage)
+
 router.get('/groups/:groupId/messages', requireAuth, chatController.getMessages)
 router.get('/groups/:groupId/members', requireAuth, chatController.getMembers)
 

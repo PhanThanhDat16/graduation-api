@@ -4,11 +4,9 @@ import express from 'express'
 
 const router = express.Router()
 
-// GUEST & USER MESSAGES
-// Unified message endpoint for both guests and authenticated users
-// For guests: provide guestName in body
-// For users: authentication is detected from token
-router.post('/:groupId/messages', conversationController.saveMessage)
+// CREATE GROUP IN CONVERSATION
+router.post('/groups', requireAuth, conversationController.createGroup)
+router.get('/groups', requireAuth, conversationController.listGroups)
 
 // GUEST CONVERSATION SETUP
 // Create a new guest conversation

@@ -3,13 +3,73 @@ import { v4 as uuidv4 } from 'uuid'
 import { ChatGroup, IChatGroup } from '@/models/chat_group.model'
 import { Message } from '@/models/message.model'
 import { User } from '@/models/user.model'
-import { MessageWithRelations } from '@/constants/chat.constants'
+import {
+  ChatGroupListItem,
+  CreateChatGroupBody,
+  EChatGroupType,
+  MessageWithRelations,
+  PublicChatUser
+} from '@/constants/chat.constants'
+import { ChatMember } from '@/models/chat_member.model'
+import { MessageRead } from '@/models/message_read.model'
 
 export interface ConversationResponse {
   group_id: string
   user_id: string | null
   guestName: string | null
   createdAt: Date
+}
+
+const GROUP_TYPES = ['global', 'contract_chat', 'guest_support'] as EChatGroupType[]
+
+const requireValidId = (id: string, label: string): void => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error(`Invalid ${label}`)
+  }
+}
+
+const getLastReadAtForGroup = async (userId: string, groupId: string): Promise<Date | null> => {
+  const agg = await MessageRead.aggregate<{ lastRead: Date | null }>([
+    { $match: { user_id: userId } },
+    {
+      $lookup: {
+        from: 'messages',
+        localField: 'message_id',
+        foreignField: '_id',
+        as: 'msg'
+      }
+    },
+    { $unwind: '$msg' },
+    { $match: { 'msg.group_id': groupId } },
+    { $group: { _id: null, lastRead: { $max: '$read_at' } } }
+  ]).exec()
+
+  return agg.length > 0 && agg[0].lastRead ? agg[0].lastRead : null
+}
+
+const countUnreadForGroup = async (userId: string, groupId: string): Promise<number> => {
+  const lastRead = await getLastReadAtForGroup(userId, groupId)
+  if (lastRead) {
+    return Message.countDocuments({
+      group_id: groupId,
+      sender_id: { $ne: userId },
+      createdAt: { $gt: lastRead }
+    })
+  }
+  return Message.countDocuments({
+    group_id: groupId,
+    sender_id: { $ne: userId }
+  })
+}
+
+const toPublicUser = (u: unknown): PublicChatUser | null => {
+  if (!u || typeof u !== 'object') return null
+  const o = u as { _id: { toString(): string }; fullName?: string; avatar?: string }
+  return {
+    _id: o._id.toString(),
+    full_name: o.fullName ?? '',
+    avatar: o.avatar ?? ''
+  }
 }
 
 export const conversationService = {
@@ -93,92 +153,94 @@ export const conversationService = {
     return this.formatConversationResponse(updatedChatGroup)
   },
 
-  /**
-   * Unified message save function for both guest and authenticated users
-   * Guest: Only requires guestName and content
-   * User: Only requires userId and content (no guestName needed)
-   * Returns populated MessageWithRelations for Socket.IO emit
-   */
-  async saveMessage(
-    groupId: string,
-    content: string,
-    options: {
-      userId?: string // For authenticated users
-      guestName?: string // For guests
-      type?: string
-    } = {}
-  ): Promise<MessageWithRelations> {
-    const { userId, guestName, type = 'text' } = options
+  async createGroup(creatorUserId: string, body: CreateChatGroupBody) {
+    requireValidId(creatorUserId, 'user id')
 
-    if (!mongoose.Types.ObjectId.isValid(groupId)) {
-      throw new Error('Invalid group ID')
+    if (!body.type || !GROUP_TYPES.includes(body.type)) {
+      throw new Error('Invalid group type')
     }
 
-    // Verify conversation exists and get the guest user
-    const conversation = await ChatGroup.findById(groupId).populate('ownerId')
-    if (!conversation) {
-      throw new Error('Conversation not found')
+    if (body.type === 'contract_chat' && !body.memberId) {
+      throw new Error('memberId is required for contract_chat')
     }
 
-    const message = await Message.create({
-      groupId: groupId,
-      senderId: userId,
-      senderName: guestName,
-      senderType: 'user',
-      type,
-      content
+    if (!Array.isArray(body.memberIds)) {
+      throw new Error('memberIds must be an array')
+    }
+
+    const memberSet = new Set<string>(body.memberIds.filter((id) => mongoose.Types.ObjectId.isValid(id)))
+    memberSet.add(creatorUserId)
+
+    const memberIds = [...memberSet]
+
+    const memberId = body.memberId && mongoose.Types.ObjectId.isValid(body.memberId) ? body.memberId : undefined
+    const disputeId = body.disputeId && mongoose.Types.ObjectId.isValid(body.disputeId) ? body.disputeId : undefined
+
+    const group = await ChatGroup.create({
+      type: body.type,
+      ...(memberId ? { memberId: memberId } : {}),
+      ...(disputeId ? { disputeId: disputeId } : {}),
+      ownerId: creatorUserId,
+      lastMessage: ''
     } as any)
 
-    // Update chat_group last message
-    await ChatGroup.findByIdAndUpdate(groupId, {
-      lastMessage: content,
-      lastMessageAt: new Date(),
-      lastSenderId: userId
-    })
+    const membersPayload = memberIds.map((id) => ({
+      groupId: group._id,
+      userId: id,
+      role: (id === creatorUserId ? 'administrator' : 'member') as EChatMemberRole
+    }))
 
-    // Populate message with relations for return
-    const populatedMessage = await Message.findById(message._id)
-      .populate('senderId', 'fullName avatar')
-      .populate({
-        path: 'replyTo',
-        select: 'content senderId createdAt',
-        populate: { path: 'senderId', select: 'fullName avatar' }
-      })
-      .lean()
+    await ChatMember.insertMany(membersPayload)
 
-    // Transform to MessageWithRelations format
-    return this.formatMessageWithRelations(populatedMessage as any)
+    const populated = await ChatGroup.findById(group._id).populate('lastSenderId', 'fullName avatar').lean()
+
+    if (!populated) {
+      throw new Error('Failed to load created group')
+    }
+
+    const gid = populated._id.toString()
+    const unread_count = await countUnreadForGroup(creatorUserId, gid)
+
+    return {
+      _id: gid,
+      memberId: populated.memberId ? populated.memberId.toString() : null,
+      ownerId: populated.ownerId ? populated.ownerId.toString() : null,
+      type: populated.type as EChatGroupType,
+      disputeId: populated.disputeId ? populated.disputeId.toString() : null,
+      lastMessage: populated.lastMessage,
+      lastMessageAt: populated.lastMessageAt ?? null,
+      lastSenderId: toPublicUser(populated.lastSenderId),
+      createdAt: populated.createdAt,
+      unreadCount: unread_count
+    } as ChatGroupListItem
   },
 
-  formatMessageWithRelations(doc: any): MessageWithRelations {
-    return {
-      _id: doc._id.toString(),
-      groupId: doc.groupId.toString(),
-      senderId: doc.senderId
-        ? {
-            _id: doc.senderId._id.toString(),
-            full_name: doc.senderId.fullName ?? '',
-            avatar: doc.senderId.avatar ?? ''
-          }
-        : null,
-      type: doc.type,
-      content: doc.content,
-      replyTo: doc.replyTo
-        ? {
-            _id: doc.replyTo._id.toString(),
-            content: doc.replyTo.content,
-            senderId: doc.replyTo.senderId
-              ? {
-                  _id: doc.replyTo.senderId._id.toString(),
-                  full_name: doc.replyTo.senderId.fullName ?? '',
-                  avatar: doc.replyTo.senderId.avatar ?? ''
-                }
-              : null,
-            createdAt: doc.replyTo.createdAt
-          }
-        : null,
-      createdAt: doc.createdAt
-    }
+  async listGroupsForUser(userId: string) {
+    requireValidId(userId, 'user id')
+
+    const memberships = (await ChatMember.find({ userId: userId }).select('groupId').lean()) as any[]
+    const groupIds = memberships.map((m) => m.groupId.toString())
+    if (groupIds.length === 0) return []
+
+    const groups = (await ChatGroup.find({ _id: { $in: groupIds } })
+      .populate('lastSenderId', 'fullName avatar')
+      .sort({ lastMessageAt: -1, createdAt: -1 })
+      .lean()) as any[]
+
+    const unreadCounts = await Promise.all(groups.map((g) => countUnreadForGroup(userId, g._id.toString())))
+
+    return groups.map((g, i) => ({
+      _id: g._id.toString(),
+      memberId: g.memberId ? g.memberId.toString() : null,
+      ownerId: g.ownerId ? g.ownerId.toString() : null,
+      type: g.type as EChatGroupType,
+      disputeId: g.disputeId ? g.disputeId.toString() : null,
+      lastMessage: g.lastMessage,
+      lastMessageAt: g.lastMessageAt ?? null,
+      lastSenderId: toPublicUser(g.lastSenderId),
+      createdAt: g.createdAt,
+      unreadCount: unreadCounts[i] ?? 0
+    })) as ChatGroupListItem[]
   },
 
   formatConversationResponse(chatGroup: IChatGroup): ConversationResponse {

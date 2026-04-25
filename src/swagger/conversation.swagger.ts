@@ -149,35 +149,50 @@
 
 /**
  * @openapi
- * /api/conversations/{groupId}/messages:
+ * /api/conversations/groups:
  *   post:
  *     tags: [Conversation]
- *     summary: Save message (for guests or authenticated users)
- *     description: Unified endpoint to save messages for both guest and authenticated users. Guest needs guestName, authenticated user needs userId
- *     parameters:
- *       - in: path
- *         name: groupId
- *         required: true
- *         schema:
- *           type: string
- *         description: Conversation group ID
+ *     summary: Create a new conversation group
+ *     description: Creates a new conversation group with specified members. Requires authentication.
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/SaveMessageRequest'
+ *             $ref: '#/components/schemas/CreateChatGroupRequest'
  *     responses:
  *       200:
- *         description: Message saved successfully
+ *         description: Conversation group created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/MessageResponse'
+ *               $ref: '#/components/schemas/ConversationDataResponse'
  *       400:
- *         description: Validation error - content required or invalid groupId
- *       404:
- *         description: Conversation not found
+ *         description: Validation error - invalid type or memberIds
+ *       401:
+ *         description: Unauthorized - authentication required
+ */
+
+/**
+ * @openapi
+ * /api/conversations/groups:
+ *   get:
+ *     tags: [Conversation]
+ *     summary: List all conversation groups for authenticated user
+ *     description: Retrieves all conversation groups that the user is a member of
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of conversation groups
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ChatGroupListResponse'
+ *       401:
+ *         description: Unauthorized - authentication required
  */
 
 /**

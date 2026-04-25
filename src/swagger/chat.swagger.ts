@@ -175,58 +175,40 @@
 
 /**
  * @openapi
- * /api/chats/groups:
+ * /api/chat/{groupId}/messages:
  *   post:
  *     tags: [Chat]
- *     summary: Create a new chat group
- *     description: |
- *       Create a new chat group for multiple users.
- *       For contract_chat type, memberId (contract ID) is required.
- *       Creator is automatically added as administrator.
- *     security:
- *       - bearerAuth: []
+ *     summary: Create a new message in chat group
+ *     description: Saves a new message to a chat group. Works for both guest and authenticated users.
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Chat group ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateChatGroupRequest'
+ *             $ref: '#/components/schemas/SaveMessageRequest'
  *     responses:
  *       200:
- *         description: Chat group created successfully
+ *         description: Message created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ChatGroupResponse'
+ *               $ref: '#/components/schemas/MessageResponse'
  *       400:
- *         description: Validation error - invalid type, memberIds, or missing memberId for contract_chat
- *       401:
- *         description: Unauthorized - authentication required
+ *         description: Validation error - content required or invalid groupId
+ *       404:
+ *         description: Chat group not found
  */
 
 /**
  * @openapi
- * /api/chats/groups:
- *   get:
- *     tags: [Chat]
- *     summary: List all chat groups for authenticated user
- *     description: Retrieves all chat groups that the user is a member of, sorted by last message time
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of chat groups
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ChatGroupListResponse'
- *       401:
- *         description: Unauthorized - authentication required
- */
-
-/**
- * @openapi
- * /api/chats/groups/{groupId}/messages:
+ * /api/chat/groups/{groupId}/messages:
  *   get:
  *     tags: [Chat]
  *     summary: Get messages in a chat group (paginated)
@@ -268,7 +250,7 @@
 
 /**
  * @openapi
- * /api/chats/groups/{groupId}/members:
+ * /api/chat/groups/{groupId}/members:
  *   get:
  *     tags: [Chat]
  *     summary: Get members of a chat group

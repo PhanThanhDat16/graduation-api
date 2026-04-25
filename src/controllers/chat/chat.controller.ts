@@ -1,10 +1,10 @@
-import { Response } from 'express'
+import { Response, Request } from 'express'
 import expressAsyncHandler from 'express-async-handler'
 
 import { HttpStatus } from '@/constants/http.constants'
 import { RequestWithUser } from '@/middlewares/auth.middlewares'
 import { chatService } from '@/services/chat/chat.service'
-import { CreateChatGroupBody } from '@/constants/chat.constants'
+import { emitChatNewMessage } from '@/socket/chatEmit'
 
 const extractUserId = (req: RequestWithUser): string | null => {
   return req.user?._id ? String(req.user._id) : null
@@ -18,55 +18,6 @@ const handleServiceError = (error: unknown, res: Response): boolean => {
   }
   return false
 }
-
-const createGroup = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const userId = extractUserId(req)
-  if (!userId) {
-    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
-    return
-  }
-
-  try {
-    const body = req.body as CreateChatGroupBody
-    const data = await chatService.createGroup(userId, {
-      type: body.type,
-      memberId: body.memberId,
-      disputeId: body.disputeId,
-      memberIds: Array.isArray(body.memberIds) ? body.memberIds : []
-    })
-    res.status(HttpStatus.OK).json({
-      message: 'Chat group created',
-      data
-    })
-  } catch (err) {
-    if (!handleServiceError(err, res)) {
-      throw err
-    }
-  }
-})
-
-/**
- * List all chat groups for current user
- */
-const listGroups = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const userId = extractUserId(req)
-  if (!userId) {
-    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
-    return
-  }
-
-  try {
-    const data = await chatService.listGroupsForUser(userId)
-    res.status(HttpStatus.OK).json({
-      message: 'OK',
-      data
-    })
-  } catch (err) {
-    if (!handleServiceError(err, res)) {
-      throw err
-    }
-  }
-})
 
 /**
  * Get paginated messages for a chat group
@@ -126,9 +77,64 @@ const getMembers = expressAsyncHandler(async (req: RequestWithUser, res: Respons
   }
 })
 
+/**
+ * Save message - Unified endpoint for both guests and authenticated users
+ * For guests: Only requires content and guestName
+ * For authenticated users: Only requires content and userId (in body)
+ *
+ * Request body: { content: string; userId?: string; guestName?: string; type?: string }
+ */
+type SaveMessageReq = Request<
+  { groupId: string },
+  object,
+  { content: string; userId?: string; guestName?: string; type?: string }
+>
+const createMessage = expressAsyncHandler(async (req: SaveMessageReq, res: Response) => {
+  const { groupId } = req.params
+  const { content, userId, guestName, type } = req.body
+
+  if (!groupId) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'groupId is required' })
+    return
+  }
+
+  if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'content is required and must be non-empty string' })
+    return
+  }
+
+  try {
+    // Determine if it's a guest or authenticated user message
+    if (!userId && !guestName) {
+      res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Either userId (for users) or guestName (for guests) is required'
+      })
+      return
+    }
+
+    const message = await chatService.saveMessage(groupId as string, content.trim(), {
+      userId: userId,
+      guestName: guestName?.trim(),
+      type: type || 'text'
+    })
+
+    // Emit message to all users in the chat group via Socket.IO
+    emitChatNewMessage(groupId, message)
+
+    res.status(HttpStatus.OK).json({
+      message: 'Message saved successfully',
+      data: message
+    })
+  } catch (error) {
+    console.error('[ConversationController] Error saving message:', error)
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: error instanceof Error ? error.message : 'Failed to save message'
+    })
+  }
+})
+
 export const chatController = {
-  createGroup,
-  listGroups,
   getMessages,
-  getMembers
+  getMembers,
+  createMessage
 }

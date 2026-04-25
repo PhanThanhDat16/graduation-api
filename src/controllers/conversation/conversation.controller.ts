@@ -5,6 +5,20 @@ import { HttpStatus } from '@/constants/http.constants'
 import { RequestWithUser } from '@/middlewares/auth.middlewares'
 import { conversationService } from '@/services/conversation/conversation.service'
 import { emitChatNewMessage } from '@/socket/chatEmit'
+import { CreateChatGroupBody } from '@/constants/chat.constants'
+
+const extractUserId = (req: RequestWithUser): string | null => {
+  return req.user?._id ? String(req.user._id) : null
+}
+
+const handleServiceError = (error: unknown, res: Response): boolean => {
+  if (error instanceof Error) {
+    const status = HttpStatus.BAD_REQUEST
+    res.status(status).json({ message: error.message })
+    return true
+  }
+  return false
+}
 
 type CreateGuestConversationReq = ExpressRequest<unknown, object, { guestName: string }>
 const createGuestConversation = expressAsyncHandler(async (req: CreateGuestConversationReq, res: Response) => {
@@ -112,59 +126,52 @@ const mergeGuestConversation = expressAsyncHandler(async (req: RequestWithUser, 
   }
 })
 
-/**
- * Save message - Unified endpoint for both guests and authenticated users
- * For guests: Only requires content and guestName
- * For authenticated users: Only requires content and userId (in body)
- *
- * Request body: { content: string; userId?: string; guestName?: string; type?: string }
- */
-type SaveMessageReq = ExpressRequest<
-  { groupId: string },
-  object,
-  { content: string; userId?: string; guestName?: string; type?: string }
->
-const saveMessage = expressAsyncHandler(async (req: SaveMessageReq, res: Response) => {
-  const { groupId } = req.params
-  const { content, userId, guestName, type } = req.body
-
-  if (!groupId) {
-    res.status(HttpStatus.BAD_REQUEST).json({ message: 'groupId is required' })
-    return
-  }
-
-  if (!content || typeof content !== 'string' || content.trim().length === 0) {
-    res.status(HttpStatus.BAD_REQUEST).json({ message: 'content is required and must be non-empty string' })
+const createGroup = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const userId = extractUserId(req)
+  if (!userId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
     return
   }
 
   try {
-    // Determine if it's a guest or authenticated user message
-    if (!userId && !guestName) {
-      res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Either userId (for users) or guestName (for guests) is required'
-      })
-      return
-    }
-
-    const message = await conversationService.saveMessage(groupId as string, content.trim(), {
-      userId: userId,
-      guestName: guestName?.trim(),
-      type: type || 'text'
+    const body = req.body as CreateChatGroupBody
+    const data = await conversationService.createGroup(userId, {
+      type: body.type,
+      memberId: body.memberId,
+      disputeId: body.disputeId,
+      memberIds: Array.isArray(body.memberIds) ? body.memberIds : []
     })
-
-    // Emit message to all users in the chat group via Socket.IO
-    emitChatNewMessage(groupId, message)
-
     res.status(HttpStatus.OK).json({
-      message: 'Message saved successfully',
-      data: message
+      message: 'Chat group created',
+      data
     })
-  } catch (error) {
-    console.error('[ConversationController] Error saving message:', error)
-    res.status(HttpStatus.BAD_REQUEST).json({
-      message: error instanceof Error ? error.message : 'Failed to save message'
+  } catch (err) {
+    if (!handleServiceError(err, res)) {
+      throw err
+    }
+  }
+})
+
+/**
+ * List all chat groups for current user
+ */
+const listGroups = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const userId = extractUserId(req)
+  if (!userId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
+    return
+  }
+
+  try {
+    const data = await conversationService.listGroupsForUser(userId)
+    res.status(HttpStatus.OK).json({
+      message: 'OK',
+      data
     })
+  } catch (err) {
+    if (!handleServiceError(err, res)) {
+      throw err
+    }
   }
 })
 
@@ -173,5 +180,6 @@ export const conversationController = {
   getConversation,
   getConversationByGuest,
   mergeGuestConversation,
-  saveMessage
+  createGroup,
+  listGroups
 }
