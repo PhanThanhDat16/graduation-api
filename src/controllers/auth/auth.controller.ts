@@ -248,7 +248,7 @@ export const googleCallback = asyncHandler(async (req: Request & { user?: Google
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getRefreshCookieOptions())
 
     // Redirect frontend + accessToken
-    res.redirect(`${process.env.URL_CLIENT}/auth/success?accessToken=${accessToken}`)
+    res.redirect(`${process.env.URL_CLIENT}auth/success?accessToken=${accessToken}`)
   } catch (err) {
     console.error(err)
     res.redirect(`${process.env.URL_CLIENT}/login`)

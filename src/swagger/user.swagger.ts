@@ -366,6 +366,35 @@
 
 /**
  * @openapi
+ * /api/users/register/staff:
+ *   post:
+ *     tags: [User]
+ *     summary: Register new staff member (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserRegisterRequest'
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserRegisterResponse'
+ *       400:
+ *         description: Email already exists
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ */
+
+/**
+ * @openapi
  * /api/users/email:
  *   put:
  *     tags: [User]
