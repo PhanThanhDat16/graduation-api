@@ -1,13 +1,10 @@
-import crypto from "crypto";
+import crypto from 'crypto'
 
 /**
  * Create HMAC SHA256 signature from raw string and secret key.
  */
 export function createSignature(rawSignature: string, secretKey: string): string {
-  return crypto
-    .createHmac("sha256", secretKey)
-    .update(rawSignature)
-    .digest("hex");
+  return crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex')
 }
 
 /**
@@ -15,16 +12,16 @@ export function createSignature(rawSignature: string, secretKey: string): string
  * Fields MUST be in alphabetical order as required by MoMo API.
  */
 export function buildCreatePaymentRawSignature(params: {
-  accessKey: string;
-  amount: number;
-  extraData: string;
-  ipnUrl: string;
-  orderId: string;
-  orderInfo: string;
-  partnerCode: string;
-  redirectUrl: string;
-  requestId: string;
-  requestType: string;
+  accessKey: string
+  amount: number
+  extraData: string
+  ipnUrl: string
+  orderId: string
+  orderInfo: string
+  partnerCode: string
+  redirectUrl: string
+  requestId: string
+  requestType: string
 }): string {
   return (
     `accessKey=${params.accessKey}` +
@@ -37,7 +34,7 @@ export function buildCreatePaymentRawSignature(params: {
     `&redirectUrl=${params.redirectUrl}` +
     `&requestId=${params.requestId}` +
     `&requestType=${params.requestType}`
-  );
+  )
 }
 
 /**
@@ -45,19 +42,19 @@ export function buildCreatePaymentRawSignature(params: {
  * Fields MUST be in alphabetical order as required by MoMo API.
  */
 export function buildCallbackRawSignature(params: {
-  accessKey: string;
-  amount: number;
-  extraData: string;
-  message: string;
-  orderId: string;
-  orderInfo: string;
-  orderType: string;
-  partnerCode: string;
-  payType: string;
-  requestId: string;
-  responseTime: number;
-  resultCode: number;
-  transId: number;
+  accessKey: string
+  amount: number
+  extraData: string
+  message: string
+  orderId: string
+  orderInfo: string
+  orderType: string
+  partnerCode: string
+  payType: string
+  requestId: string
+  responseTime: number
+  resultCode: number
+  transId: number
 }): string {
   return (
     `accessKey=${params.accessKey}` +
@@ -73,26 +70,19 @@ export function buildCallbackRawSignature(params: {
     `&responseTime=${params.responseTime}` +
     `&resultCode=${params.resultCode}` +
     `&transId=${params.transId}`
-  );
+  )
 }
 
 /**
  * Verify a MoMo callback signature.
  * Returns true if the signature is valid.
  */
-export function verifyCallbackSignature(
-  callbackSignature: string,
-  rawSignature: string,
-  secretKey: string
-): boolean {
-  const computedSignature = createSignature(rawSignature, secretKey);
+export function verifyCallbackSignature(callbackSignature: string, rawSignature: string, secretKey: string): boolean {
+  const computedSignature = createSignature(rawSignature, secretKey)
   // Use timingSafeEqual to prevent timing attacks
   try {
-    return crypto.timingSafeEqual(
-      Buffer.from(callbackSignature, "hex"),
-      Buffer.from(computedSignature, "hex")
-    );
+    return crypto.timingSafeEqual(Buffer.from(callbackSignature, 'hex'), Buffer.from(computedSignature, 'hex'))
   } catch {
-    return false;
+    return false
   }
 }
