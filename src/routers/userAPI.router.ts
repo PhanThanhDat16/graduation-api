@@ -5,6 +5,7 @@ import express from 'express'
 const router = express.Router()
 
 router.post('/register', userController.register)
+router.post('/register/staff', requireAuth, userController.registerStaff)
 router.get('/', userController.getAllUser)
 router.get('/profile', requireAuth, userController.getProfile)
 router.put('/profile', requireAuth, userController.updateProfile)

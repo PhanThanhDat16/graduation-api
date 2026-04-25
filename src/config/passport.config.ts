@@ -3,6 +3,7 @@ import { Strategy as GoogleStrategy, Profile, StrategyOptionsWithRequest } from 
 import type { Request } from 'express'
 import { User } from '@/models/user.model'
 import dotenv from 'dotenv'
+import { randomUUID } from 'crypto'
 dotenv.config()
 
 const { CLIENT_ID, CLIENT_SECRET, GOOGLE_CALLBACK_URL } = process.env
@@ -30,12 +31,17 @@ function initPassport(passport: PassportStatic) {
           const seed = encodeURIComponent(email || profile.displayName)
           const avatarUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`
 
+          const password = randomUUID();
+
           const existingUser = await User.findOne({ email })
           if (existingUser) {
-            existingUser.provider = 'google'
             existingUser.googleId = profile.id
-            if (!existingUser.avatar) existingUser.avatar = avatarUrl
-            if (!existingUser.fullName) existingUser.fullName = profile.displayName || email
+            if (!existingUser.isVerified) {
+              existingUser.isVerified = true
+              existingUser.provider = 'google'
+              existingUser.password = password
+              existingUser.avatar = avatarUrl
+            }
             await existingUser.save()
             return done(null, existingUser)
           }
@@ -43,10 +49,11 @@ function initPassport(passport: PassportStatic) {
           const newUser = await User.create({
             fullName: profile.displayName || email,
             email,
-            password: '',
+            password: password,
             avatar: avatarUrl,
             provider: 'google',
-            googleId: profile.id
+            googleId: profile.id,
+            isVerified: true
           })
 
           return done(null, newUser)

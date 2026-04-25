@@ -7,6 +7,7 @@ export const authService = {
     const existingUser = await User.findOne({ email }).lean()
 
     if (!existingUser) return false
+    if (!existingUser.isVerified) return false
 
     const passwordMatch = await bcrypt.compare(password, existingUser.password as string)
     if (!passwordMatch) return false
