@@ -15,10 +15,14 @@ router.post('/withdraw-requests', requireAuth, walletController.createWithdrawRe
 router.get('/withdraw-requests', requireAuth, walletController.getMyWithdrawRequests)
 router.delete('/withdraw-requests/:id', requireAuth, walletController.cancelWithdrawRequest)
 
-// Admin routes
-router.get('/admin/withdraw-requests', requireAuth, walletController.getAllWithdrawRequests)
-router.put('/admin/withdraw-requests/:id', requireAuth, walletController.processWithdrawRequest)
-router.get('/admin/users/:userId', requireAuth, walletController.getUserWallet)
-router.post('/admin/users/:userId/deposit', requireAuth, walletController.adminDeposit)
+// Staff routes (withdraw management + user wallet operations)
+router.get('/staff/withdraw-requests', requireAuth, walletController.getAllWithdrawRequests)
+router.put('/staff/withdraw-requests/:id', requireAuth, walletController.processWithdrawRequest)
+router.get('/staff/users/:userId', requireAuth, walletController.getUserWallet)
+router.post('/staff/users/:userId/deposit', requireAuth, walletController.adminDeposit)
+
+// Admin routes (wallet overview)
+router.get('/admin/wallets', requireAuth, walletController.getAllWallets)
+router.get('/admin/wallets/:userId', requireAuth, walletController.getUserWallet)
 
 export const routerWallet = router

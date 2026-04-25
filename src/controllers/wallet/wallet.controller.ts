@@ -254,6 +254,24 @@ const adminDeposit = expressAsyncHandler(async (req: Request, res: Response) => 
   })
 })
 
+// Admin: Get all wallets
+const getAllWallets = expressAsyncHandler(async (req: Request, res: Response) => {
+  const query = req.query
+
+  const filter = {
+    page: query.page ? Number(query.page) : 1,
+    limit: query.limit ? Number(query.limit) : 10,
+    user_id: query.user_id as string | undefined
+  }
+
+  const result = await walletService.getAllWallets(filter)
+
+  res.status(HttpStatus.OK).json({
+    message: 'Get all wallets successfully',
+    ...result
+  })
+})
+
 export const walletController = {
   getMyBalance,
   getMyWallet,
@@ -266,4 +284,5 @@ export const walletController = {
   processWithdrawRequest,
   getUserWallet,
   adminDeposit,
+  getAllWallets
 }

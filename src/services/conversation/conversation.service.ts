@@ -7,7 +7,7 @@ import {
   ChatGroupListItem,
   CreateChatGroupBody,
   EChatGroupType,
-  MessageWithRelations,
+  EChatMemberRole,
   PublicChatUser
 } from '@/constants/chat.constants'
 import { ChatMember } from '@/models/chat_member.model'
@@ -20,7 +20,7 @@ export interface ConversationResponse {
   createdAt: Date
 }
 
-const GROUP_TYPES = ['global', 'contract_chat', 'guest_support'] as EChatGroupType[]
+const GROUP_TYPES = ['contract_chat', 'guest_support'] as EChatGroupType[]
 
 const requireValidId = (id: string, label: string): void => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -160,10 +160,6 @@ export const conversationService = {
       throw new Error('Invalid group type')
     }
 
-    if (body.type === 'contract_chat' && !body.memberId) {
-      throw new Error('memberId is required for contract_chat')
-    }
-
     if (!Array.isArray(body.memberIds)) {
       throw new Error('memberIds must be an array')
     }
@@ -173,12 +169,11 @@ export const conversationService = {
 
     const memberIds = [...memberSet]
 
-    const memberId = body.memberId && mongoose.Types.ObjectId.isValid(body.memberId) ? body.memberId : undefined
     const disputeId = body.disputeId && mongoose.Types.ObjectId.isValid(body.disputeId) ? body.disputeId : undefined
 
     const group = await ChatGroup.create({
       type: body.type,
-      ...(memberId ? { memberId: memberId } : {}),
+      memberIds: memberIds,
       ...(disputeId ? { disputeId: disputeId } : {}),
       ownerId: creatorUserId,
       lastMessage: ''
@@ -192,7 +187,9 @@ export const conversationService = {
 
     await ChatMember.insertMany(membersPayload)
 
-    const populated = await ChatGroup.findById(group._id).populate('lastSenderId', 'fullName avatar').lean()
+    const populated = (await ChatGroup.findById(group._id)
+      .populate('lastSenderId', 'fullName avatar')
+      .lean()) as IChatGroup | null
 
     if (!populated) {
       throw new Error('Failed to load created group')
@@ -203,7 +200,7 @@ export const conversationService = {
 
     return {
       _id: gid,
-      memberId: populated.memberId ? populated.memberId.toString() : null,
+      memberIds: Array.isArray(populated.memberIds) ? populated.memberIds : [],
       ownerId: populated.ownerId ? populated.ownerId.toString() : null,
       type: populated.type as EChatGroupType,
       disputeId: populated.disputeId ? populated.disputeId.toString() : null,
@@ -231,7 +228,7 @@ export const conversationService = {
 
     return groups.map((g, i) => ({
       _id: g._id.toString(),
-      memberId: g.memberId ? g.memberId.toString() : null,
+      memberIds: Array.isArray(g.memberIds) ? g.memberIds : [],
       ownerId: g.ownerId ? g.ownerId.toString() : null,
       type: g.type as EChatGroupType,
       disputeId: g.disputeId ? g.disputeId.toString() : null,

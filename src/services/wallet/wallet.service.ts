@@ -631,6 +631,29 @@ const getTransactionsByContractId = async (contractId: string, query: Pagination
   )
 }
 
+// Get all wallets (admin)
+const getAllWallets = async (query: PaginationQuery & { user_id?: string }) => {
+  const filter: any = {}
+
+  if (query.user_id && mongoose.Types.ObjectId.isValid(query.user_id)) {
+    filter.user_id = new mongoose.Types.ObjectId(query.user_id)
+  }
+
+  const result = await paginate(
+    Wallet,
+    filter,
+    { ...query, sortBy: 'createdAt', sortOrder: 'desc' },
+    '_id user_id balance createdAt updatedAt'
+  )
+
+  await Wallet.populate(result.data, {
+    path: 'user_id',
+    select: 'fullName email avatar role'
+  })
+
+  return result
+}
+
 export const walletService = {
   getOrCreateWallet,
   getWalletByUserId,
@@ -647,5 +670,6 @@ export const walletService = {
   getAllWithdrawRequests,
   processWithdrawRequest,
   cancelWithdrawRequest,
-  getTransactionsByContractId
+  getTransactionsByContractId,
+  getAllWallets
 }

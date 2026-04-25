@@ -3,7 +3,7 @@ import mongoose, { Document } from 'mongoose'
 
 const chatGroupSchema = new mongoose.Schema(
   {
-    memberId: { type: String, default: null, index: true, sparse: true },
+    memberIds: { type: [String], default: [] },
     ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     type: { type: String, enum: EChatGroupType, required: true },
     disputeId: { type: mongoose.Schema.Types.ObjectId, ref: 'DisputeForm', default: null },
@@ -19,17 +19,15 @@ const chatGroupSchema = new mongoose.Schema(
   }
 )
 
-chatGroupSchema.index({ memberId: 1 })
+chatGroupSchema.index({ memberIds: 1 })
 chatGroupSchema.index({ disputeId: 1 })
 chatGroupSchema.index({ type: 1 })
 chatGroupSchema.index({ lastMessageAt: -1 })
-chatGroupSchema.index({ memberId: 1, createdAt: -1 })
-chatGroupSchema.index({ ownerId: 1, createdAt: -1 })
 
 export const ChatGroup = mongoose.model('ChatGroup', chatGroupSchema)
 
 export interface IChatGroup extends Document {
-  memberId: string | null
+  memberIds: string[]
   ownerId: mongoose.Types.ObjectId | null
   type: EChatGroupType
   disputeId: mongoose.Types.ObjectId | null

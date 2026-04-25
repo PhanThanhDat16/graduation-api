@@ -1,5 +1,4 @@
 export enum EChatGroupType {
-  GLOBAL = 'global',
   CONTRACT_CHAT = 'contract_chat',
   GUEST_SUPPORT = 'guest_support'
 }
@@ -23,7 +22,7 @@ export interface PublicChatUser {
 
 export interface ChatGroupListItem {
   _id: string
-  memberId: string | null
+  memberIds: string[]
   ownerId: string | null
   type: EChatGroupType
   disputeId: string | null
@@ -60,7 +59,6 @@ export interface GroupMemberRow {
 
 export interface CreateChatGroupBody {
   type: EChatGroupType
-  memberId?: string
   disputeId?: string
   memberIds: string[]
 }

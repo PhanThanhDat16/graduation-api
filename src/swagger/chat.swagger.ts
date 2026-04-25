@@ -15,12 +15,8 @@
  *       properties:
  *         type:
  *           type: string
- *           enum: [global, contract_chat]
+ *           enum: [contract_chat, guest_support]
  *           description: Type of chat group
- *         memberId:
- *           type: string
- *           nullable: true
- *           description: Required for contract_chat type (contract ID)
  *         disputeId:
  *           type: string
  *           nullable: true
@@ -47,14 +43,17 @@
  *       properties:
  *         _id:
  *           type: string
- *         memberId:
- *           type: string
- *           nullable: true
+ *         memberIds:
+ *           type: array
+ *           items:
+ *             type: string
+ *           description: List of user IDs in this group
+ *           example: ["507f1f77bcf86cd799439011"]
  *         ownerId:
  *           type: string
  *         type:
  *           type: string
- *           enum: [global, contract_chat, guest_support]
+ *           enum: [contract_chat, guest_support]
  *         disputeId:
  *           type: string
  *           nullable: true

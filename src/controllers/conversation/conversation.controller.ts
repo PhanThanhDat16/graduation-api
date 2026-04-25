@@ -137,7 +137,6 @@ const createGroup = expressAsyncHandler(async (req: RequestWithUser, res: Respon
     const body = req.body as CreateChatGroupBody
     const data = await conversationService.createGroup(userId, {
       type: body.type,
-      memberId: body.memberId,
       disputeId: body.disputeId,
       memberIds: Array.isArray(body.memberIds) ? body.memberIds : []
     })
