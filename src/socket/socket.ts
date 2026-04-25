@@ -28,23 +28,23 @@ export function setupSocket(server: http.Server): void {
     })
 
     // STAFF JOIN CONVERSATION GENERAL (to response guest)
-    socket.on('staff_join_conv_general', () => {
-      socket.join('staff_join_conv_general')
+    socket.on('staff_room_general', () => {
+      socket.join('staff_room_general')
     })
 
-    // USERS, STAFF JOIN CONVERSATION (to response internal)
-    socket.on('user_join_conv', (data) => {
+    // GUEST JOIN CONVERSATION (to response internal)
+    socket.on('guest_join_conversation', (data) => {
       const { groupId } = data
       const room = chatRoomForGroup(groupId)
       socket.join(room)
+      io.to('staff_room_general').emit('new_conversation', {
+        groupId
+      })
     })
 
     socket.on('disconnect', (reason) => {
       console.log(`[Socket] User disconnected: ${socket.id} - Reason: ${reason}`)
     })
 
-    socket.on('error', (error) => {
-      console.error(`[Socket] Error from ${socket.id}:`, error)
-    })
   })
 }

@@ -30,6 +30,8 @@ import { setupSocket } from './socket/socket'
 import { routerAccountBank } from './routers/account_bankAPI.router'
 import { routerChat } from './routers/chatAPI.router'
 import { routerConversation } from './routers/conversationAPI.router'
+import { routerAI } from './routers/aiAPI.router'
+import { routerUpload } from './routers/uploadAPI.router'
 
 dotenv.config()
 
@@ -105,6 +107,9 @@ app.use('/api/accounts/bank', routerAccountBank)
 
 app.use('/api/chat', routerChat)
 app.use('/api/conversations', routerConversation)
+app.use('/internal/ai', routerAI)
+
+app.use('/api/upload', routerUpload)
 
 // Initialize Auth Google
 app.use(passport.initialize())
