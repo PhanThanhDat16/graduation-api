@@ -39,6 +39,50 @@ const register = expressAsyncHandler(async (req: Request, res: Response) => {
     .json({ message: 'register successfully. Please check OTP in your email to verify', data: user })
 })
 
+const registerStaff = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const { email, password, fullName, phone, address, birthday, gender, role = 'staff' } = req.body
+  const isAllowed = req.user?.role;
+
+  if (!isAllowed) {
+    res.status(HttpStatus.UNAUTHORIZED).json({
+      message: 'Unauthorized'
+    })
+    return
+  }
+
+  if (isAllowed !== "admin") {
+    res.status(HttpStatus.FORBIDDEN).json({
+      message: 'You do not have permission to perform this action'
+    })
+    return
+  }
+  
+
+  const hashedPassword = await bcrypt.hash(password, 10)
+
+  const user = await userService.registerUser({
+    email: email as string,
+    password: hashedPassword,
+    fullName,
+    phone: phone as string,
+    address,
+    birthday,
+    gender,
+    role,
+    isVerified: true
+  })
+
+  if (!user) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'User already exists',
+      error: 'User already exists'
+    })
+    return
+  }
+
+  res.status(HttpStatus.OK).json({ message: 'register staff successfully', data: user })
+})
+
 const getAllUser = expressAsyncHandler(async (req: Request, res: Response) => {
   const { page, limit, sortBy, sortOrder, role, status, isVerified, keyword } = req.query
 
@@ -253,5 +297,6 @@ export const userController = {
   updateProfile,
   updatePassword,
   updateEmail,
-  requestEmailChangeOtp
+  requestEmailChangeOtp,
+  registerStaff
 }
