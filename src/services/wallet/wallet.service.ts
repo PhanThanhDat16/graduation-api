@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 import { Wallet } from '@/models/wallet.model'
 import { WalletTransaction } from '@/models/wallet_transaction.model'
 import { WithdrawRequest } from '@/models/withdraw_request.model'
-import Account from '@/models/aaccount_bank.model'
+import AccountBank from '@/models/account_bank.model'
 import { paginate } from '@/utils/paginate'
 import { PaginationQuery } from '@/constants/pagination.constant'
 import { v4 as uuidv4 } from 'uuid'
@@ -424,7 +424,7 @@ const createWithdrawRequest = async (userId: string, amount: number, accountId: 
     throw new Error('Amount must be greater than 0')
   }
 
-  const account = await Account.findOne({ _id: accountId, userId })
+  const account = await AccountBank.findOne({ _id: accountId, userId })
   if (!account) {
     throw new Error('Bank account not found or does not belong to user')
   }
@@ -436,7 +436,7 @@ const createWithdrawRequest = async (userId: string, amount: number, accountId: 
   }
 
   // Check pending request
-  const userAccounts = await Account.find({ userId }).select('_id')
+  const userAccounts = await AccountBank.find({ userId }).select('_id')
   const accountIds = userAccounts.map((a) => a._id)
   const pendingRequest = await WithdrawRequest.findOne({
     account_id: { $in: accountIds },
@@ -462,7 +462,7 @@ const getMyWithdrawRequests = async (userId: string, query: PaginationQuery & Wi
     throw new Error('Invalid user ID format')
   }
 
-  const userAccounts = await Account.find({ userId }).select('_id')
+  const userAccounts = await AccountBank.find({ userId }).select('_id')
   const filter: any = { account_id: { $in: userAccounts.map((a) => a._id) } }
 
   if (query.status) {
@@ -491,7 +491,7 @@ const getAllWithdrawRequests = async (query: PaginationQuery & WithdrawRequestFi
   }
 
   if (query.user_id) {
-    const userAccounts = await Account.find({ userId: query.user_id }).select('_id')
+    const userAccounts = await AccountBank.find({ userId: query.user_id }).select('_id')
     filter.account_id = { $in: userAccounts.map((a) => a._id) }
   }
 

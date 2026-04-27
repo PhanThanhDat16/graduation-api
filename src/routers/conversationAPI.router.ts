@@ -4,11 +4,9 @@ import express from 'express'
 
 const router = express.Router()
 
-// CREATE GROUP IN CONVERSATION
 router.post('/groups', requireAuth, conversationController.createGroup)
 router.get('/groups', requireAuth, conversationController.listGroups)
 
-// GUEST CONVERSATION SETUP
 // Create a new guest conversation
 router.post('/guest', conversationController.createGuestConversation)
 
@@ -17,6 +15,12 @@ router.post('/merge', requireAuth, conversationController.mergeGuestConversation
 
 // Get conversation by member_id
 router.get('/guest', conversationController.getConversationByGuest)
+
+// Admin: reassign all conversations from one staff to another
+router.post('/reassign', requireAuth, conversationController.reassignConversations)
+
+// Staff/Admin: list all conversations with optional type filter
+router.get('/all', requireAuth, conversationController.listAllConversations)
 
 // Get conversation (chat_group) by ID
 router.get('/:groupId', conversationController.getConversation)

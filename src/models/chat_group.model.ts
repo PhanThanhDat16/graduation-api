@@ -8,6 +8,7 @@ const chatGroupSchema = new mongoose.Schema(
     type: { type: String, enum: EChatGroupType, required: true },
     disputeId: { type: mongoose.Schema.Types.ObjectId, ref: 'DisputeForm', default: null },
     guestName: { type: String, default: null },
+    assignedStaffId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     lastMessage: { type: String, default: '' },
     lastMessageAt: { type: Date, default: null },
     lastSenderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
@@ -22,6 +23,7 @@ const chatGroupSchema = new mongoose.Schema(
 chatGroupSchema.index({ memberIds: 1 })
 chatGroupSchema.index({ disputeId: 1 })
 chatGroupSchema.index({ type: 1 })
+chatGroupSchema.index({ assignedStaffId: 1 })
 chatGroupSchema.index({ lastMessageAt: -1 })
 
 export const ChatGroup = mongoose.model('ChatGroup', chatGroupSchema)
@@ -32,6 +34,7 @@ export interface IChatGroup extends Document {
   type: EChatGroupType
   disputeId: mongoose.Types.ObjectId | null
   guestName: string | null
+  assignedStaffId: mongoose.Types.ObjectId | null
   lastMessage: string
   lastMessageAt: Date | null
   lastSenderId: mongoose.Types.ObjectId | null

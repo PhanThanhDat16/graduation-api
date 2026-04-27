@@ -174,11 +174,80 @@ const listGroups = expressAsyncHandler(async (req: RequestWithUser, res: Respons
   }
 })
 
+/**
+ * Reassign all conversations from one staff to another (admin only)
+ */
+const reassignConversations = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const userId = extractUserId(req)
+  if (!userId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
+    return
+  }
+
+  // Check admin role
+  const userRole = req.user?.role
+  if (userRole !== 'admin') {
+    res.status(HttpStatus.FORBIDDEN).json({ message: 'Only admin can reassign conversations' })
+    return
+  }
+
+  const { fromStaffId, toStaffId } = req.body
+
+  if (!fromStaffId || !toStaffId) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'fromStaffId and toStaffId are required' })
+    return
+  }
+
+  try {
+    const result = await conversationService.reassignStaffConversations(fromStaffId, toStaffId)
+    res.status(HttpStatus.OK).json({
+      message: 'Conversations reassigned successfully',
+      data: result
+    })
+  } catch (err) {
+    if (!handleServiceError(err, res)) {
+      throw err
+    }
+  }
+})
+
+/**
+ * List all conversations for staff/admin with optional type filter
+ */
+const listAllConversations = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const userId = extractUserId(req)
+  if (!userId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
+    return
+  }
+
+  const userRole = req.user?.role
+  if (userRole !== 'staff' && userRole !== 'admin') {
+    res.status(HttpStatus.FORBIDDEN).json({ message: 'Only staff and admin can access this endpoint' })
+    return
+  }
+
+  try {
+    const type = req.query.type as string | undefined
+    const data = await conversationService.listAllConversations(type)
+    res.status(HttpStatus.OK).json({
+      message: 'OK',
+      data
+    })
+  } catch (err) {
+    if (!handleServiceError(err, res)) {
+      throw err
+    }
+  }
+})
+
 export const conversationController = {
   createGuestConversation,
   getConversation,
   getConversationByGuest,
   mergeGuestConversation,
   createGroup,
-  listGroups
+  listGroups,
+  reassignConversations,
+  listAllConversations
 }

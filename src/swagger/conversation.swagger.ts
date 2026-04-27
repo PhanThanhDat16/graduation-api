@@ -121,6 +121,19 @@
  *           type: string
  *           description: The ID of the temporary guest user created during conversation
  *           example: "507f1f77bcf86cd799439011"
+ *
+ *     ReassignStaffConversationsRequest:
+ *       type: object
+ *       required: [fromStaffId, toStaffId]
+ *       properties:
+ *         fromStaffId:
+ *           type: string
+ *           description: The ID of the current assigned staff
+ *           example: "60d0fe4f5311236168a109ca"
+ *         toStaffId:
+ *           type: string
+ *           description: The ID of the new staff to assign conversations to
+ *           example: "60d0fe4f5311236168a109cb"
  */
 
 /**
@@ -281,4 +294,124 @@
  *         description: Validation error - groupId is required
  *       404:
  *         description: Conversation not found
+ */
+ 
+/**
+ * @openapi
+ * /api/conversations/reassign:
+ *   post:
+ *     tags: [Conversation]
+ *     summary: Reassign all conversations from one staff to another (Admin only)
+ *     description: |
+ *       Finds all support conversations assigned to one staff and reassigns them to another staff.
+ *       Updates assignedStaffId, memberIds, and ChatMember records.
+ *       Requires Admin role.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ReassignStaffConversationsRequest'
+ *     responses:
+ *       200:
+ *         description: Conversations reassigned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     reassignedCount:
+ *                       type: number
+ *       400:
+ *         description: Validation error - fromStaffId and toStaffId are required
+ *       401:
+ *         description: Unauthorized - authentication required
+ *       403:
+ *         description: Forbidden - only admins can access this endpoint
+ */
+ 
+/**
+ * @openapi
+ * /api/conversations/all:
+ *   get:
+ *     tags: [Conversation]
+ *     summary: List all conversations with optional type filter (Staff/Admin only)
+ *     description: |
+ *       Returns all conversations in the system, optionally filtered by type.
+ *       Includes populated owner info, assigned staff info, and last sender info.
+ *       Requires Staff or Admin role.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [guest_support, user_support, contract_chat]
+ *         description: Filter conversations by type (optional, returns all if omitted)
+ *     responses:
+ *       200:
+ *         description: List of conversations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       memberIds:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       ownerId:
+ *                         type: string
+ *                         nullable: true
+ *                       ownerInfo:
+ *                         $ref: '#/components/schemas/PublicChatUser'
+ *                         nullable: true
+ *                       type:
+ *                         type: string
+ *                         enum: [guest_support, user_support, contract_chat]
+ *                       disputeId:
+ *                         type: string
+ *                         nullable: true
+ *                       assignedStaffId:
+ *                         type: string
+ *                         nullable: true
+ *                       assignedStaffInfo:
+ *                         $ref: '#/components/schemas/PublicChatUser'
+ *                         nullable: true
+ *                       guestName:
+ *                         type: string
+ *                         nullable: true
+ *                       lastMessage:
+ *                         type: string
+ *                       lastMessageAt:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                       lastSenderId:
+ *                         $ref: '#/components/schemas/PublicChatUser'
+ *                         nullable: true
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *       401:
+ *         description: Unauthorized - authentication required
+ *       403:
+ *         description: Forbidden - only staff and admin can access this endpoint
  */

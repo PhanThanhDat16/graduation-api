@@ -14,7 +14,8 @@ export const paginate = async <T>(
   const sortField = query.sortBy || 'createdAt'
   const sortOrder = query.sortOrder === 'asc' ? 1 : -1
 
-  let mongooseQuery = model.find(filter)
+  let mongooseQuery = model
+    .find(filter)
     .select(select)
     .sort({ [sortField]: sortOrder })
     .skip(skip)
@@ -24,10 +25,7 @@ export const paginate = async <T>(
     mongooseQuery = mongooseQuery.populate(populate)
   }
 
-  const [data, total] = await Promise.all([
-    mongooseQuery.lean(),
-    model.countDocuments(filter)
-  ])
+  const [data, total] = await Promise.all([mongooseQuery.lean(), model.countDocuments(filter)])
 
   return {
     data,
