@@ -9,7 +9,7 @@
  * @openapi
  * components:
  *   schemas:
- *     AccountData:
+ *     AccountBankData:
  *       type: object
  *       properties:
  *         _id:
@@ -43,7 +43,7 @@
  *         updatedAt:
  *           type: string
  *           format: date-time
- *     AccountListResponse:
+ *     AccountBankListResponse:
  *       type: object
  *       properties:
  *         message:
@@ -52,16 +52,16 @@
  *         data:
  *           type: array
  *           items:
- *             $ref: '#/components/schemas/AccountData'
- *     AccountSingleResponse:
+ *             $ref: '#/components/schemas/AccountBankData'
+ *     AccountBankSingleResponse:
  *       type: object
  *       properties:
  *         message:
  *           type: string
  *           example: "Get bank account successfully"
  *         data:
- *           $ref: '#/components/schemas/AccountData'
- *     AccountDeleteResponse:
+ *           $ref: '#/components/schemas/AccountBankData'
+ *     AccountBankDeleteResponse:
  *       type: object
  *       properties:
  *         status:
@@ -70,7 +70,7 @@
  *         message:
  *           type: string
  *           example: "Delete bank account successfully"
- *     CreateAccountRequest:
+ *     CreateAccountBankRequest:
  *       type: object
  *       required: [code, bankShortName, accountNumber, accountName, logo]
  *       properties:
@@ -93,7 +93,7 @@
  *           type: string
  *           enum: [active, inactive]
  *           default: active
- *     UpdateAccountRequest:
+ *     UpdateAccountBankRequest:
  *       type: object
  *       properties:
  *         accountNumber:
@@ -125,14 +125,14 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateAccountRequest'
+ *             $ref: '#/components/schemas/CreateAccountBankRequest'
  *     responses:
  *       200:
  *         description: Created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/AccountSingleResponse'
+ *               $ref: '#/components/schemas/AccountBankSingleResponse'
  *       400:
  *         description: All fields are required / Account already exists
  *       401:
@@ -153,7 +153,7 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/AccountListResponse'
+ *               $ref: '#/components/schemas/AccountBankListResponse'
  *       401:
  *         description: Unauthorized
  */
@@ -185,7 +185,7 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/AccountSingleResponse'
+ *               $ref: '#/components/schemas/AccountBankSingleResponse'
  *       400:
  *         description: ID account is required / Update bank account failed
  *       401:
@@ -213,7 +213,7 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/AccountSingleResponse'
+ *               $ref: '#/components/schemas/AccountBankSingleResponse'
  *       400:
  *         description: ID account is required / Get bank account failed
  *       401:
@@ -235,14 +235,14 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateAccountRequest'
+ *             $ref: '#/components/schemas/UpdateAccountBankRequest'
  *     responses:
  *       200:
  *         description: Updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/AccountSingleResponse'
+ *               $ref: '#/components/schemas/AccountBankSingleResponse'
  *       400:
  *         description: ID account is required / Update bank account failed
  *       401:
@@ -265,7 +265,7 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/AccountDeleteResponse'
+ *               $ref: '#/components/schemas/AccountBankDeleteResponse'
  *       400:
  *         description: ID account is required / Delete bank account failed
  *       401:

@@ -1,6 +1,7 @@
 export enum EChatGroupType {
   CONTRACT_CHAT = 'contract_chat',
-  GUEST_SUPPORT = 'guest_support'
+  GUEST_SUPPORT = 'guest_support',
+  USER_SUPPORT = 'user_support'
 }
 
 export enum EChatMemberRole {
@@ -26,6 +27,7 @@ export interface ChatGroupListItem {
   ownerId: string | null
   type: EChatGroupType
   disputeId: string | null
+  assignedStaffId: string | null
   lastMessage: string
   lastMessageAt: Date | null
   lastSenderId: PublicChatUser | null

@@ -1,10 +1,11 @@
 import { IProjectCreate, IProjectUpdate, ProjectQuery } from '@/constants/project.constant'
 import { Project } from '@/models/project.model'
 import { paginate } from '@/utils/paginate'
-import mongoose from 'mongoose'
 
 const PROJECT_SAFE_FIELDS =
   '_id contractorId title description category skills budgetMin budgetMax status likes listLike createdAt updatedAt'
+
+const CONTRACTOR_SAFE_FIELDS = '_id fullName email avatar ratingAvg address phone status ratingCount isVerified'
 
 const createProject = async (data: IProjectCreate) => {
   const project = await Project.create(data as any)
@@ -47,11 +48,14 @@ const getAllProject = async (query: ProjectQuery) => {
   }
 
 
-  return await paginate(Project, filter, query, PROJECT_SAFE_FIELDS, { path: 'contractorId', select: 'fullName email avatar' })
+  return await paginate(Project, filter, query, PROJECT_SAFE_FIELDS, { path: 'contractorId', select: CONTRACTOR_SAFE_FIELDS })
 }
 
 const getProjectById = async (id: string) => {
-  const project = await Project.findById(id).select(PROJECT_SAFE_FIELDS).lean()
+  const project = await Project.findById(id)
+    .select(PROJECT_SAFE_FIELDS)
+    .populate({ path: 'contractorId', select: CONTRACTOR_SAFE_FIELDS })
+    .lean()
 
   if (!project) {
     throw new Error('Project not found')

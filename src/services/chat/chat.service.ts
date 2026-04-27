@@ -11,6 +11,7 @@ import {
   ReplyPreview
 } from '@/constants/chat.constants'
 import { ChatGroup } from '@/models/chat_group.model'
+import { User } from '@/models/user.model'
 
 const requireValidId = (id: string, label: string): void => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -144,10 +145,38 @@ export const chatService = {
       throw new Error('Invalid group ID')
     }
 
-    // Verify conversation exists and get the guest user
-    const conversation = await ChatGroup.findById(groupId).populate('ownerId')
+    // Verify conversation exists
+    const conversation = await ChatGroup.findById(groupId)
     if (!conversation) {
       throw new Error('Conversation not found')
+    }
+
+    const isSupport = ['guest_support', 'user_support'].includes(conversation.type)
+
+    // Staff auto-assign and permission check for support conversations
+    if (isSupport && userId) {
+      const sender = await User.findById(userId).select('role').lean() as any
+      if (sender && sender.role === 'staff') {
+        if (!conversation.assignedStaffId) {
+          // Auto-assign: first staff to reply
+          conversation.assignedStaffId = new mongoose.Types.ObjectId(userId)
+          await ChatGroup.updateOne(
+            { _id: conversation._id },
+            {
+              $set: { assignedStaffId: new mongoose.Types.ObjectId(userId) },
+              $addToSet: { memberIds: userId }
+            }
+          )
+          // Add staff as ChatMember if not already
+          await ChatMember.updateOne(
+            { groupId: conversation._id, userId: new mongoose.Types.ObjectId(userId) },
+            { $setOnInsert: { groupId: conversation._id, userId: new mongoose.Types.ObjectId(userId), role: EChatMemberRole.MEMBER } },
+            { upsert: true }
+          )
+        } else if (conversation.assignedStaffId.toString() !== userId) {
+          throw new Error('Only the assigned staff can reply to this conversation')
+        }
+      }
     }
 
     const message = await Message.create({

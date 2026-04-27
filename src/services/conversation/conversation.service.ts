@@ -88,8 +88,16 @@ export const conversationService = {
     const chatGroup = await ChatGroup.create({
       ownerId: guestUser._id,
       guestName: guestUser.fullName,
-      type: 'guest_support'
+      type: EChatGroupType.GUEST_SUPPORT,
+      memberIds: [guestUser._id.toString()]
     } as any)
+
+    // Create chat_member for guest
+    await ChatMember.create({
+      groupId: chatGroup._id,
+      userId: guestUser._id,
+      role: EChatMemberRole.ADMINISTRATOR
+    })
 
     return this.formatConversationResponse(chatGroup as any)
   },
@@ -136,14 +144,35 @@ export const conversationService = {
       { senderId: new mongoose.Types.ObjectId(newUserId) }
     )
 
-    // Update chat_group to link with new user account
+    // Update ChatMember from guest user to new user
+    await ChatMember.updateOne(
+      { groupId: chatGroup._id, userId: new mongoose.Types.ObjectId(guestUserId) },
+      { userId: new mongoose.Types.ObjectId(newUserId) }
+    )
+
+    // Update chat_group to link with new user account and update memberIds
+    // Also update lastSenderId if it was the guest user (will be deleted)
+    const updateFields: any = {
+      ownerId: new mongoose.Types.ObjectId(newUserId),
+      type: EChatGroupType.USER_SUPPORT,
+      guestName: null
+    }
+    if (chatGroup.lastSenderId?.toString() === guestUserId) {
+      updateFields.lastSenderId = new mongoose.Types.ObjectId(newUserId)
+    }
+
     const updatedChatGroup = (await ChatGroup.findOneAndUpdate(
       { _id: chatGroup._id },
-      {
-        ownerId: new mongoose.Types.ObjectId(newUserId)
-      } as any,
+      { $set: updateFields },
       { new: true }
     ).lean()) as any
+
+    // Also update memberIds array
+    await ChatGroup.updateOne(
+      { _id: chatGroup._id },
+      { $set: { 'memberIds.$[elem]': newUserId } },
+      { arrayFilters: [{ elem: guestUserId }] }
+    )
 
     // Delete guest user (role='other') since it's merged
     await User.deleteOne({
@@ -205,6 +234,7 @@ export const conversationService = {
       ownerId: populated.ownerId ? populated.ownerId.toString() : null,
       type: populated.type as EChatGroupType,
       disputeId: populated.disputeId ? populated.disputeId.toString() : null,
+      assignedStaffId: populated.assignedStaffId ? populated.assignedStaffId.toString() : null,
       lastMessage: populated.lastMessage,
       lastMessageAt: populated.lastMessageAt ?? null,
       lastSenderId: toPublicUser(populated.lastSenderId),
@@ -216,29 +246,145 @@ export const conversationService = {
   async listGroupsForUser(userId: string) {
     requireValidId(userId, 'user id')
 
+    // Check if user is staff to also show unassigned support conversations
+    const user = await User.findById(userId).select('role').lean() as any
+    const isStaff = user?.role === 'staff'
+
     const memberships = (await ChatMember.find({ userId: userId }).select('groupId').lean()) as any[]
     const groupIds = memberships.map((m) => m.groupId.toString())
-    if (groupIds.length === 0) return []
 
-    const groups = (await ChatGroup.find({ _id: { $in: groupIds } })
+    // Build query: user's own groups + unassigned support groups for staff
+    const query: any = isStaff
+      ? {
+          $or: [
+            ...(groupIds.length > 0 ? [{ _id: { $in: groupIds } }] : []),
+            {
+              assignedStaffId: null,
+              type: { $in: ['guest_support', 'user_support'] }
+            }
+          ]
+        }
+      : groupIds.length > 0
+        ? { _id: { $in: groupIds } }
+        : null
+
+    if (!query) return []
+
+    const groups = (await ChatGroup.find(query)
       .populate('lastSenderId', 'fullName avatar')
       .sort({ lastMessageAt: -1, createdAt: -1 })
       .lean()) as any[]
 
     const unreadCounts = await Promise.all(groups.map((g) => countUnreadForGroup(userId, g._id.toString())))
 
-    return groups.map((g, i) => ({
-      _id: g._id.toString(),
-      memberIds: Array.isArray(g.memberIds) ? g.memberIds : [],
-      ownerId: g.ownerId ? g.ownerId.toString() : null,
-      type: g.type as EChatGroupType,
-      disputeId: g.disputeId ? g.disputeId.toString() : null,
-      lastMessage: g.lastMessage,
-      lastMessageAt: g.lastMessageAt ?? null,
-      lastSenderId: toPublicUser(g.lastSenderId),
-      createdAt: g.createdAt,
-      unreadCount: unreadCounts[i] ?? 0
-    })) as ChatGroupListItem[]
+    return groups.map((g, i) => {
+      const ownerIdStr = g.ownerId ? g.ownerId.toString() : null
+      const filteredMemberIds = Array.isArray(g.memberIds)
+        ? g.memberIds.filter((id: string) => id !== ownerIdStr)
+        : []
+
+      return {
+        _id: g._id.toString(),
+        memberIds: filteredMemberIds,
+        ownerId: ownerIdStr,
+        type: g.type as EChatGroupType,
+        disputeId: g.disputeId ? g.disputeId.toString() : null,
+        assignedStaffId: g.assignedStaffId ? g.assignedStaffId.toString() : null,
+        lastMessage: g.lastMessage,
+        lastMessageAt: g.lastMessageAt ?? null,
+        lastSenderId: toPublicUser(g.lastSenderId),
+        createdAt: g.createdAt,
+        unreadCount: unreadCounts[i] ?? 0
+      }
+    }) as ChatGroupListItem[]
+  },
+
+  async reassignStaffConversations(fromStaffId: string, toStaffId: string) {
+    requireValidId(fromStaffId, 'fromStaffId')
+    requireValidId(toStaffId, 'toStaffId')
+
+    // Find all groups assigned to the old staff
+    const groups = await ChatGroup.find({
+      assignedStaffId: new mongoose.Types.ObjectId(fromStaffId)
+    }).lean() as any[]
+
+    if (groups.length === 0) {
+      return { reassignedCount: 0 }
+    }
+
+    const groupIds = groups.map((g) => g._id)
+
+    // Update assignedStaffId on all groups
+    await ChatGroup.updateMany(
+      { _id: { $in: groupIds } },
+      { $set: { assignedStaffId: new mongoose.Types.ObjectId(toStaffId) } }
+    )
+
+    // Update memberIds: remove old staff, add new staff
+    await ChatGroup.updateMany(
+      { _id: { $in: groupIds } },
+      {
+        $pull: { memberIds: fromStaffId },
+        $addToSet: { memberIds: toStaffId }
+      } as any
+    )
+
+    // Update ChatMember records: replace old staff with new staff
+    for (const gId of groupIds) {
+      // Remove old staff member
+      await ChatMember.deleteOne({
+        groupId: gId,
+        userId: new mongoose.Types.ObjectId(fromStaffId)
+      })
+      // Upsert new staff member
+      await ChatMember.updateOne(
+        { groupId: gId, userId: new mongoose.Types.ObjectId(toStaffId) },
+        {
+          $setOnInsert: {
+            groupId: gId,
+            userId: new mongoose.Types.ObjectId(toStaffId),
+            role: EChatMemberRole.MEMBER
+          }
+        },
+        { upsert: true }
+      )
+    }
+
+    return { reassignedCount: groups.length }
+  },
+
+  async listAllConversations(type?: string) {
+    const filter: any = {}
+    if (type && ['guest_support', 'user_support', 'contract_chat'].includes(type)) {
+      filter.type = type
+    }
+
+    const groups = (await ChatGroup.find(filter)
+      .populate('lastSenderId', 'fullName avatar')
+      .populate('ownerId', 'fullName avatar')
+      .populate('assignedStaffId', 'fullName avatar')
+      .sort({ lastMessageAt: -1, createdAt: -1 })
+      .lean()) as any[]
+
+    return groups.map((g) => {
+      const ownerIdStr = g.ownerId?._id ? g.ownerId._id.toString() : (g.ownerId ? g.ownerId.toString() : null)
+
+      return {
+        _id: g._id.toString(),
+        memberIds: Array.isArray(g.memberIds) ? g.memberIds : [],
+        ownerId: ownerIdStr,
+        ownerInfo: toPublicUser(g.ownerId),
+        type: g.type as EChatGroupType,
+        disputeId: g.disputeId ? g.disputeId.toString() : null,
+        assignedStaffId: g.assignedStaffId?._id ? g.assignedStaffId._id.toString() : null,
+        assignedStaffInfo: toPublicUser(g.assignedStaffId),
+        guestName: g.guestName ?? null,
+        lastMessage: g.lastMessage,
+        lastMessageAt: g.lastMessageAt ?? null,
+        lastSenderId: toPublicUser(g.lastSenderId),
+        createdAt: g.createdAt
+      }
+    })
   },
 
   formatConversationResponse(chatGroup: IChatGroup): ConversationResponse {

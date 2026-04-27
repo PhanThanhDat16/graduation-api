@@ -5,7 +5,7 @@ enum EAccountStatus {
   INACTIVE = 'inactive'
 }
 
-export interface IAccount extends Document {
+export interface IAccountBank extends Document {
   userId: mongoose.Schema.Types.ObjectId
   code: string
   bankShortName: string
@@ -15,7 +15,7 @@ export interface IAccount extends Document {
   status: EAccountStatus
 }
 
-const accountSchema = new mongoose.Schema(
+const accountBankSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -48,10 +48,14 @@ const accountSchema = new mongoose.Schema(
       default: EAccountStatus.ACTIVE
     }
   },
-  { timestamps: true }
+  {
+    versionKey: false,
+    strict: true,
+    timestamps: true
+  }
 )
 
-accountSchema.index({ userId: 1 })
-const Account = mongoose.model('Account', accountSchema)
+accountBankSchema.index({ userId: 1 })
+const AccountBank = mongoose.model('AccountBank', accountBankSchema)
 
-export default Account
+export default AccountBank
