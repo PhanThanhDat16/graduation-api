@@ -20,7 +20,7 @@ export interface ConversationResponse {
   createdAt: Date
 }
 
-const GROUP_TYPES = ['contract_chat', 'guest_support'] as EChatGroupType[]
+const GROUP_TYPES = ['contract_chat', 'guest_support', 'user_support'] as EChatGroupType[]
 
 const requireValidId = (id: string, label: string): void => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -247,7 +247,7 @@ export const conversationService = {
     requireValidId(userId, 'user id')
 
     // Check if user is staff to also show unassigned support conversations
-    const user = await User.findById(userId).select('role').lean() as any
+    const user = (await User.findById(userId).select('role').lean()) as any
     const isStaff = user?.role === 'staff'
 
     const memberships = (await ChatMember.find({ userId: userId }).select('groupId').lean()) as any[]
@@ -279,9 +279,7 @@ export const conversationService = {
 
     return groups.map((g, i) => {
       const ownerIdStr = g.ownerId ? g.ownerId.toString() : null
-      const filteredMemberIds = Array.isArray(g.memberIds)
-        ? g.memberIds.filter((id: string) => id !== ownerIdStr)
-        : []
+      const filteredMemberIds = Array.isArray(g.memberIds) ? g.memberIds.filter((id: string) => id !== ownerIdStr) : []
 
       return {
         _id: g._id.toString(),
@@ -304,9 +302,9 @@ export const conversationService = {
     requireValidId(toStaffId, 'toStaffId')
 
     // Find all groups assigned to the old staff
-    const groups = await ChatGroup.find({
+    const groups = (await ChatGroup.find({
       assignedStaffId: new mongoose.Types.ObjectId(fromStaffId)
-    }).lean() as any[]
+    }).lean()) as any[]
 
     if (groups.length === 0) {
       return { reassignedCount: 0 }
@@ -321,13 +319,10 @@ export const conversationService = {
     )
 
     // Update memberIds: remove old staff, add new staff
-    await ChatGroup.updateMany(
-      { _id: { $in: groupIds } },
-      {
-        $pull: { memberIds: fromStaffId },
-        $addToSet: { memberIds: toStaffId }
-      } as any
-    )
+    await ChatGroup.updateMany({ _id: { $in: groupIds } }, {
+      $pull: { memberIds: fromStaffId },
+      $addToSet: { memberIds: toStaffId }
+    } as any)
 
     // Update ChatMember records: replace old staff with new staff
     for (const gId of groupIds) {
@@ -367,7 +362,7 @@ export const conversationService = {
       .lean()) as any[]
 
     return groups.map((g) => {
-      const ownerIdStr = g.ownerId?._id ? g.ownerId._id.toString() : (g.ownerId ? g.ownerId.toString() : null)
+      const ownerIdStr = g.ownerId?._id ? g.ownerId._id.toString() : g.ownerId ? g.ownerId.toString() : null
 
       return {
         _id: g._id.toString(),
