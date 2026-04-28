@@ -159,7 +159,7 @@
  *           type: string
  *         role:
  *           type: string
- *           enum: [member, administrator]
+ *           enum: [member, owner]
  *         joinedAt:
  *           type: string
  *           format: date-time

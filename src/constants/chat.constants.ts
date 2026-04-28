@@ -6,7 +6,7 @@ export enum EChatGroupType {
 
 export enum EChatMemberRole {
   MEMBER = 'member',
-  ADMINISTRATOR = 'administrator'
+  OWNER = 'owner'
 }
 export enum EMessageType {
   TEXT = 'text',

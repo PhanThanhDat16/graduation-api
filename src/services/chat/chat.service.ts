@@ -32,7 +32,7 @@ const toPublicUser = (u: unknown): PublicChatUser | null => {
 const ensureMember = async (groupId: string, userId: string): Promise<void> => {
   requireValidId(groupId, 'group id')
   requireValidId(userId, 'user id')
-  const member = await ChatMember.findOne({ group_id: groupId, user_id: userId }).lean()
+  const member = await ChatMember.findOne({ groupId: groupId, userId: userId }).lean()
   if (!member) {
     throw new Error('You are not a member of this group')
   }
@@ -44,12 +44,12 @@ const formatReply = (reply: unknown): ReplyPreview | null => {
     _id: { toString(): string }
     content: string
     createdAt: Date
-    sender_id: unknown
+    senderId: unknown
   }
   return {
     _id: r._id.toString(),
     content: r.content,
-    senderId: toPublicUser(r.sender_id),
+    senderId: toPublicUser(r.senderId),
     createdAt: r.createdAt
   }
 }
@@ -57,20 +57,20 @@ const formatReply = (reply: unknown): ReplyPreview | null => {
 const toMessageWithRelations = (doc: unknown): MessageWithRelations => {
   const m = doc as {
     _id: { toString(): string }
-    group_id: { toString(): string }
-    sender_id: unknown
+    groupId: { toString(): string }
+    senderId: unknown
     type: EMessageType
     content: string
-    reply_to: unknown
+    replyTo: unknown
     createdAt: Date
   }
   return {
     _id: m._id.toString(),
-    groupId: m.group_id.toString(),
-    senderId: toPublicUser(m.sender_id),
+    groupId: m.groupId.toString(),
+    senderId: toPublicUser(m.senderId),
     type: m.type,
     content: m.content,
-    replyTo: formatReply(m.reply_to),
+    replyTo: formatReply(m.replyTo),
     createdAt: m.createdAt
   }
 }

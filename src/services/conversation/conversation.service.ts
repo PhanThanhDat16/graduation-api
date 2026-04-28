@@ -96,7 +96,7 @@ export const conversationService = {
     await ChatMember.create({
       groupId: chatGroup._id,
       userId: guestUser._id,
-      role: EChatMemberRole.ADMINISTRATOR
+      role: EChatMemberRole.OWNER
     })
 
     return this.formatConversationResponse(chatGroup as any)
@@ -212,7 +212,7 @@ export const conversationService = {
     const membersPayload = memberIds.map((id) => ({
       groupId: group._id,
       userId: id,
-      role: (id === creatorUserId ? 'administrator' : 'member') as EChatMemberRole
+      role: (id === creatorUserId ? 'owner' : 'member') as EChatMemberRole
     }))
 
     await ChatMember.insertMany(membersPayload)
@@ -256,14 +256,14 @@ export const conversationService = {
     // Build query: user's own groups + unassigned support groups for staff
     const query: any = isStaff
       ? {
-          $or: [
-            ...(groupIds.length > 0 ? [{ _id: { $in: groupIds } }] : []),
-            {
-              assignedStaffId: null,
-              type: { $in: ['guest_support', 'user_support'] }
-            }
-          ]
-        }
+        $or: [
+          ...(groupIds.length > 0 ? [{ _id: { $in: groupIds } }] : []),
+          {
+            assignedStaffId: null,
+            type: { $in: ['guest_support', 'user_support'] }
+          }
+        ]
+      }
       : groupIds.length > 0
         ? { _id: { $in: groupIds } }
         : null
