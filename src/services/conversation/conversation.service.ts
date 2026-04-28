@@ -20,7 +20,7 @@ export interface ConversationResponse {
   createdAt: Date
 }
 
-const GROUP_TYPES = ['contract_chat', 'guest_support'] as EChatGroupType[]
+const GROUP_TYPES = ['contract_chat', 'guest_support', 'user_support'] as EChatGroupType[]
 
 const requireValidId = (id: string, label: string): void => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
