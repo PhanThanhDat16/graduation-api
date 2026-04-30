@@ -1,18 +1,17 @@
 import { PaginationQuery } from "./pagination.constant";
 
 export interface ReviewFilter {
-  contract_id?: string;
-  contractor_id?: string;
-  freelancer_id?: string;
+  contractId?: string;
+  reviewerId?: string;
+  revieweeId?: string;
+  role?: 'freelancer' | 'contractor';
   rating?: number;
   minRating?: number;
   maxRating?: number;
 }
 
 export interface ICreateReview {
-  contract_id: string;
-  contractor_id: string;
-  freelancer_id: string;
+  contractId: string;
   rating: number;
   comment?: string;
 }
