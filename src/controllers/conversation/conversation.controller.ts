@@ -162,7 +162,8 @@ const listGroups = expressAsyncHandler(async (req: RequestWithUser, res: Respons
   }
 
   try {
-    const data = await conversationService.listGroupsForUser(userId)
+    const type = req.query.type as string | undefined
+    const data = await conversationService.listGroupsForUser(userId, type)
     res.status(HttpStatus.OK).json({
       message: 'OK',
       data
