@@ -99,6 +99,24 @@ export const conversationService = {
       role: EChatMemberRole.OWNER
     })
 
+    // Create default message "tôi cần hỗ trợ"
+    const defaultContent = 'tôi cần hỗ trợ'
+    await Message.create({
+      groupId: chatGroup._id,
+      senderId: guestUser._id,
+      senderName: guestName,
+      senderType: 'guest',
+      type: 'text',
+      content: defaultContent
+    } as any)
+
+    // Update lastMessage on the chat group
+    await ChatGroup.findByIdAndUpdate(chatGroup._id, {
+      lastMessage: defaultContent,
+      lastMessageAt: new Date(),
+      lastSenderId: guestUser._id
+    })
+
     return this.formatConversationResponse(chatGroup as any)
   },
 
@@ -128,48 +146,73 @@ export const conversationService = {
       throw new Error('Invalid user ID')
     }
 
-    // Find chat_group owned by guest user
-    const chatGroup = await ChatGroup.findOne({
+    // Find the guest conversation
+    const guestGroup = await ChatGroup.findOne({
       ownerId: new mongoose.Types.ObjectId(guestUserId),
-      type: 'guest_support'
+      type: EChatGroupType.GUEST_SUPPORT
     })
 
-    if (!chatGroup) {
+    if (!guestGroup) {
       throw new Error('Guest conversation not found')
     }
 
+    // Check if the user already has an active USER_SUPPORT conversation
+    const existingUserConversation = await ChatGroup.findOne({
+      ownerId: new mongoose.Types.ObjectId(newUserId),
+      type: EChatGroupType.USER_SUPPORT
+    })
+
+    if (existingUserConversation) {
+      // --- User already has a USER_SUPPORT conversation ---
+      // Discard the guest conversation entirely
+      await Message.deleteMany({ groupId: guestGroup._id })
+      await ChatMember.deleteMany({ groupId: guestGroup._id })
+      await ChatGroup.deleteOne({ _id: guestGroup._id })
+
+      // Delete guest user (role='other')
+      await User.deleteOne({
+        _id: new mongoose.Types.ObjectId(guestUserId),
+        role: 'other'
+      })
+
+      // Return the existing conversation
+      const refreshed = (await ChatGroup.findById(existingUserConversation._id).lean()) as any
+      return this.formatConversationResponse(refreshed)
+    }
+
+    // --- No existing USER_SUPPORT conversation → convert the guest one ---
+
     // Update all messages from guest user to new user
     await Message.updateMany(
-      { groupId: chatGroup._id, senderId: new mongoose.Types.ObjectId(guestUserId) },
-      { senderId: new mongoose.Types.ObjectId(newUserId) }
+      { groupId: guestGroup._id, senderId: new mongoose.Types.ObjectId(guestUserId) },
+      { $set: { senderId: new mongoose.Types.ObjectId(newUserId), senderType: 'user', senderName: null } }
     )
 
     // Update ChatMember from guest user to new user
     await ChatMember.updateOne(
-      { groupId: chatGroup._id, userId: new mongoose.Types.ObjectId(guestUserId) },
-      { userId: new mongoose.Types.ObjectId(newUserId) }
+      { groupId: guestGroup._id, userId: new mongoose.Types.ObjectId(guestUserId) },
+      { $set: { userId: new mongoose.Types.ObjectId(newUserId) } }
     )
 
-    // Update chat_group to link with new user account and update memberIds
-    // Also update lastSenderId if it was the guest user (will be deleted)
+    // Build update fields for the chat group
     const updateFields: any = {
       ownerId: new mongoose.Types.ObjectId(newUserId),
       type: EChatGroupType.USER_SUPPORT,
       guestName: null
     }
-    if (chatGroup.lastSenderId?.toString() === guestUserId) {
+    if (guestGroup.lastSenderId?.toString() === guestUserId) {
       updateFields.lastSenderId = new mongoose.Types.ObjectId(newUserId)
     }
 
     const updatedChatGroup = (await ChatGroup.findOneAndUpdate(
-      { _id: chatGroup._id },
+      { _id: guestGroup._id },
       { $set: updateFields },
       { new: true }
     ).lean()) as any
 
-    // Also update memberIds array
+    // Update memberIds array: replace guestUserId with newUserId
     await ChatGroup.updateOne(
-      { _id: chatGroup._id },
+      { _id: guestGroup._id },
       { $set: { 'memberIds.$[elem]': newUserId } },
       { arrayFilters: [{ elem: guestUserId }] }
     )
@@ -243,7 +286,7 @@ export const conversationService = {
     } as ChatGroupListItem
   },
 
-  async listGroupsForUser(userId: string) {
+  async listGroupsForUser(userId: string, type?: string) {
     requireValidId(userId, 'user id')
 
     // Check if user is staff to also show unassigned support conversations
@@ -254,21 +297,26 @@ export const conversationService = {
     const groupIds = memberships.map((m) => m.groupId.toString())
 
     // Build query: user's own groups + unassigned support groups for staff
-    const query: any = isStaff
+    let query: any = isStaff
       ? {
-        $or: [
-          ...(groupIds.length > 0 ? [{ _id: { $in: groupIds } }] : []),
-          {
-            assignedStaffId: null,
-            type: { $in: ['guest_support', 'user_support'] }
-          }
-        ]
-      }
+          $or: [
+            ...(groupIds.length > 0 ? [{ _id: { $in: groupIds } }] : []),
+            {
+              assignedStaffId: null,
+              type: { $in: ['guest_support', 'user_support'] }
+            }
+          ]
+        }
       : groupIds.length > 0
         ? { _id: { $in: groupIds } }
         : null
 
     if (!query) return []
+
+    // Apply type filter if provided
+    if (type) {
+      query = { $and: [query, { type }] }
+    }
 
     const groups = (await ChatGroup.find(query)
       .populate('lastSenderId', 'fullName avatar')

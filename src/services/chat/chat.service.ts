@@ -87,7 +87,51 @@ export const chatService = {
 
     const [raw, total] = await Promise.all([
       Message.find(filter)
-        .sort({ createdAt: -1 })
+        .sort({ createdAt: 1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .populate('senderId', 'fullName avatar')
+        .populate({
+          path: 'replyTo',
+          select: 'content senderId createdAt',
+          populate: { path: 'senderId', select: 'fullName avatar' }
+        })
+        .lean(),
+      Message.countDocuments(filter)
+    ])
+
+    const data = raw.map((doc) => toMessageWithRelations(doc as any))
+
+    return {
+      data,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit) || 1
+    }
+  },
+
+  /**
+   * Get paginated messages for guest (no membership check)
+   */
+  async getGuestMessagesPaginated(groupId: string, page: number, limit: number) {
+    requireValidId(groupId, 'group id')
+
+    // Verify the group exists and is a guest_support type
+    const group = (await ChatGroup.findById(groupId).lean()) as any
+    if (!group || group.type !== 'guest_support') {
+      throw new Error('Guest conversation not found')
+    }
+
+    const safePage = Math.max(1, page)
+    const safeLimit = Math.min(100, Math.max(1, limit))
+    const skip = (safePage - 1) * safeLimit
+
+    const filter = { groupId: groupId }
+
+    const [raw, total] = await Promise.all([
+      Message.find(filter)
+        .sort({ createdAt: 1 })
         .skip(skip)
         .limit(safeLimit)
         .populate('senderId', 'fullName avatar')
@@ -155,7 +199,7 @@ export const chatService = {
 
     // Staff auto-assign and permission check for support conversations
     if (isSupport && userId) {
-      const sender = await User.findById(userId).select('role').lean() as any
+      const sender = (await User.findById(userId).select('role').lean()) as any
       if (sender && sender.role === 'staff') {
         if (!conversation.assignedStaffId) {
           // Auto-assign: first staff to reply
@@ -170,7 +214,13 @@ export const chatService = {
           // Add staff as ChatMember if not already
           await ChatMember.updateOne(
             { groupId: conversation._id, userId: new mongoose.Types.ObjectId(userId) },
-            { $setOnInsert: { groupId: conversation._id, userId: new mongoose.Types.ObjectId(userId), role: EChatMemberRole.MEMBER } },
+            {
+              $setOnInsert: {
+                groupId: conversation._id,
+                userId: new mongoose.Types.ObjectId(userId),
+                role: EChatMemberRole.MEMBER
+              }
+            },
             { upsert: true }
           )
         } else if (conversation.assignedStaffId.toString() !== userId) {
