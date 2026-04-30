@@ -180,11 +180,11 @@ export const chatService = {
     options: {
       userId?: string // For authenticated users
       guestName?: string // For guests
+      senderType?: string // Added senderType to options
       type?: string
     } = {}
   ): Promise<MessageWithRelations> {
-    const { userId, guestName, type = 'text' } = options
-
+    const { userId, guestName, senderType = 'user', type = 'text' } = options
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error('Invalid group ID')
     }
@@ -233,7 +233,7 @@ export const chatService = {
       groupId: groupId,
       senderId: userId,
       senderName: guestName,
-      senderType: 'user',
+      senderType: senderType, // Use senderType from options
       type,
       content
     } as any)

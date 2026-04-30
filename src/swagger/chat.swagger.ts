@@ -173,6 +173,38 @@
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/GroupMember'
+ *
+ *     SaveMessageRequest:
+ *       type: object
+ *       required: [content]
+ *       properties:
+ *         content:
+ *           type: string
+ *           description: The content of the message
+ *         userId:
+ *           type: string
+ *           nullable: true
+ *           description: User ID for authenticated users
+ *         guestName:
+ *           type: string
+ *           nullable: true
+ *           description: Guest name for guest users
+ *         senderType:
+ *           type: string
+ *           description: Type of sender (user, staff, guest)
+ *           example: user
+ *         type:
+ *           type: string
+ *           description: Message type (text, image, file, system)
+ *           default: text
+ *
+ *     MessageResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *         data:
+ *           $ref: '#/components/schemas/Message'
  */
 
 /**

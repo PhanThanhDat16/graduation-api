@@ -114,11 +114,11 @@ const getGuestMessages = expressAsyncHandler(async (req: Request, res: Response)
 type SaveMessageReq = Request<
   { groupId: string },
   object,
-  { content: string; userId?: string; guestName?: string; type?: string }
+  { content: string; userId?: string; guestName?: string; senderType?: string; type?: string }
 >
 const createMessage = expressAsyncHandler(async (req: SaveMessageReq, res: Response) => {
   const { groupId } = req.params
-  const { content, userId, guestName, type } = req.body
+  const { content, userId, guestName, senderType, type } = req.body // Added senderType to destructuring
 
   if (!groupId) {
     res.status(HttpStatus.BAD_REQUEST).json({ message: 'groupId is required' })
@@ -142,6 +142,7 @@ const createMessage = expressAsyncHandler(async (req: SaveMessageReq, res: Respo
     const message = await chatService.saveMessage(groupId as string, content.trim(), {
       userId: userId,
       guestName: guestName?.trim(),
+      senderType: senderType, // Default senderType to 'user'
       type: type || 'text'
     })
 

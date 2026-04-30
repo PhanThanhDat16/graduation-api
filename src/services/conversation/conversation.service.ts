@@ -125,7 +125,7 @@ export const conversationService = {
       throw new Error('Invalid group ID')
     }
 
-    return ChatGroup.findById(groupId).lean() as any
+    return ChatGroup.findById(groupId).populate('ownerId', 'fullName email avatar').lean() as any
   },
 
   async getConversationByUserId(userId: string, groupId: string) {
@@ -137,7 +137,9 @@ export const conversationService = {
       ownerId: new mongoose.Types.ObjectId(userId),
       _id: groupId,
       type: 'guest_support'
-    }).lean() as any
+    })
+      .populate('ownerId', 'fullName email avatar')
+      .lean() as any
   },
 
   async mergeGuestConversation(guestUserId: string, newUserId: string): Promise<ConversationResponse> {
