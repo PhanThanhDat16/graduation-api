@@ -10,12 +10,17 @@ router.get('/me', requireAuth, disputeController.getMyDisputes)
 router.get('/contract/:contractId', requireAuth, disputeController.getDisputeByContractId)
 router.get('/:id', requireAuth, disputeController.getDisputeById)
 router.post('/:id/reason', requireAuth, disputeController.submitReason)
+router.post('/:id/escalate', requireAuth, disputeController.escalateDispute)
 router.post('/:id/propose', requireAuth, disputeController.proposeResolution)
 router.post('/:id/agree', requireAuth, disputeController.agreeToResolution)
-router.post('/:id/escalate', requireAuth, disputeController.escalateToAdmin)
+router.get('/:id/check-deadline', requireAuth, disputeController.checkReasonDeadline)
 
-// Admin routes
+// Staff routes
+router.post('/:id/staff/join', requireAuth, disputeController.staffJoinDispute)
+router.post('/:id/staff/cancel', requireAuth, disputeController.staffCancelDispute)
+router.post('/:id/staff/resolve', requireAuth, disputeController.staffResolveDispute)
+
+// Staff routes
 router.get('/', requireAuth, disputeController.getAllDisputes)
-router.post('/:id/admin/resolve', requireAuth, disputeController.adminResolveDispute)
 
 export const routerDispute = router

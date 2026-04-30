@@ -20,7 +20,7 @@ export interface ConversationResponse {
   createdAt: Date
 }
 
-const GROUP_TYPES = ['contract_chat', 'guest_support', 'user_support'] as EChatGroupType[]
+const GROUP_TYPES = ['contract_chat', 'dispute', 'guest_support', 'user_support'] as EChatGroupType[]
 
 const requireValidId = (id: string, label: string): void => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -400,7 +400,7 @@ export const conversationService = {
 
   async listAllConversations(type?: string) {
     const filter: any = {}
-    if (type && ['guest_support', 'user_support', 'contract_chat'].includes(type)) {
+    if (type && ['guest_support', 'user_support', 'contract_chat', 'dispute'].includes(type)) {
       filter.type = type
     }
 

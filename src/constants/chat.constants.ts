@@ -1,5 +1,6 @@
 export enum EChatGroupType {
   CONTRACT_CHAT = 'contract_chat',
+  DISPUTE = 'dispute',
   GUEST_SUPPORT = 'guest_support',
   USER_SUPPORT = 'user_support'
 }

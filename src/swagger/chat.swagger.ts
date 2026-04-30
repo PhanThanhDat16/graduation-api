@@ -15,7 +15,7 @@
  *       properties:
  *         type:
  *           type: string
- *           enum: [contract_chat, guest_support, user_support]
+ *           enum: [contract_chat, dispute, guest_support, user_support]
  *           description: Type of chat group
  *         disputeId:
  *           type: string
@@ -53,7 +53,7 @@
  *           type: string
  *         type:
  *           type: string
- *           enum: [contract_chat, guest_support, user_support]
+ *           enum: [contract_chat, dispute, guest_support, user_support]
  *         disputeId:
  *           type: string
  *           nullable: true
