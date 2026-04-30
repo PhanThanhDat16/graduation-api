@@ -2,6 +2,7 @@ import { EDisputeStatus } from './dispute_form.constants'
 
 export enum EContractStatus {
   DRAFT = 'draft',
+  CLOSED_FOR_REQUESTS = 'closed_for_requests',
   PENDING_AGREEMENT = 'pending_agreement',
   WAITING_PAYMENT = 'waiting_payment',
   RUNNING = 'running',
@@ -38,9 +39,9 @@ export interface ContractFilter {
 
 export interface DisputeFilter {
   status?: EDisputeStatus
-  contract_id?: string
-  contractor_id?: string
-  freelancer_id?: string
+  contractId?: string
+  contractorId?: string
+  freelancerId?: string
 }
 
 export interface ICreateContract {
@@ -71,14 +72,15 @@ export interface IUpdateContract {
 }
 
 export interface ICreateDispute {
-  contract_id: string
-  opened_by: string
+  contractId: string
+  openedBy: string
   reason?: string
 }
 
 export interface IProposeResolution {
-  resolution_type: EResolutionType
-  freelancer_amount?: number
-  contractor_amount?: number
-  new_deadline?: Date
+  resolutionType: EResolutionType
+  freelancerAmount?: number
+  contractorAmount?: number
+  newDeadline?: Date
 }
+
