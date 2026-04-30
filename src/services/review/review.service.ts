@@ -1,22 +1,19 @@
+import { EContractStatus } from '@/constants/contract.constants'
 import { ICreateReview, IUpdateReview, ReviewQuery } from '@/constants/review.constants'
 import { Contract } from '@/models/contract.model'
 import { Review } from '@/models/review.model'
 import { paginate } from '@/utils/paginate'
 import mongoose from 'mongoose'
 
-const REVIEW_SAFE_FIELDS = '_id contract_id contractor_id freelancer_id rating comment createdAt updatedAt'
+const REVIEW_SAFE_FIELDS = '_id contractId reviewerId revieweeId role rating comment createdAt updatedAt'
 
-const createReview = async (data: ICreateReview) => {
-  if (!mongoose.Types.ObjectId.isValid(data.contract_id)) {
+const createReview = async (reviewerId: string, data: ICreateReview) => {
+  if (!mongoose.Types.ObjectId.isValid(data.contractId)) {
     throw new Error('Invalid contract ID format')
   }
 
-  if (!mongoose.Types.ObjectId.isValid(data.contractor_id)) {
-    throw new Error('Invalid contractor ID format')
-  }
-
-  if (!mongoose.Types.ObjectId.isValid(data.freelancer_id)) {
-    throw new Error('Invalid freelancer ID format')
+  if (!mongoose.Types.ObjectId.isValid(reviewerId)) {
+    throw new Error('Invalid reviewer ID format')
   }
 
   if (data.rating < 1 || data.rating > 5) {
@@ -24,31 +21,47 @@ const createReview = async (data: ICreateReview) => {
   }
 
   // check authorization
-  const contract = await Contract.findById(data.contract_id)
+  const contract = await Contract.findById(data.contractId)
+
+  let role: 'freelancer' | 'contractor'
+  let revieweeId: string
 
   if(!contract){
     throw new Error('Contract not found')
   }
 
-  if(contract.contractor_id.toString() !== data.contractor_id){
-    throw new Error('You are not authorized to review freelancer in this contract!')
+  if (contract.status !== EContractStatus.COMPLETED) {
+    throw new Error('Cannot review unfinished contract')
   }
 
-  if(contract.freelancer_id.toString() !== data.freelancer_id){
-    throw new Error('Freelancer is not in this contract!')
+  if(contract.contractor_id.toString() === reviewerId){
+    role = 'contractor'
+    revieweeId = contract.freelancer_id.toString()
+  } else if (contract.freelancer_id.toString() === reviewerId){
+    role = 'freelancer'
+    revieweeId = contract.contractor_id.toString()
+  } else {
+    throw new Error('You are not authorized to review this contract!')
   }
 
   // Check if a review already exists for this contract by this contractor
-  const existingReview = await Review.findOne({
-    contract_id: data.contract_id,
-    contractor_id: data.contractor_id
+   const existingReview = await Review.findOne({
+    contractId: data.contractId,
+    reviewerId: reviewerId
   } as any)
 
-  if (existingReview) {
+  if(existingReview){
     throw new Error('You have already reviewed this contract!')
   }
 
-  const review = await Review.create(data as any)
+  const review = await Review.create({
+    contractId: data.contractId,
+    reviewerId: reviewerId,
+    revieweeId: revieweeId,
+    role,
+    rating: data.rating,
+    comment: data.comment
+  } as any)
 
   return review
 }
@@ -56,31 +69,39 @@ const createReview = async (data: ICreateReview) => {
 const getAllReviews = async (query: ReviewQuery) => {
   const filter: any = {}
 
-  if (query.contract_id) {
-    filter.contract_id = query.contract_id
+  if (query.contractId) {
+    filter.contractId = new mongoose.Types.ObjectId(query.contractId)
   }
 
-  if (query.contractor_id) {
-    filter.contractor_id = query.contractor_id
+  if(query.role){
+    filter.role = query.role
   }
 
-  if (query.freelancer_id) {
-    filter.freelancer_id = query.freelancer_id
+  if(query.reviewerId){
+    filter.reviewerId = new mongoose.Types.ObjectId(query.reviewerId)
+  }
+
+  if(query.revieweeId){
+    filter.revieweeId = new mongoose.Types.ObjectId(query.revieweeId)
   }
 
   if (query.rating !== undefined) {
     filter.rating = Number(query.rating)
   }
 
-  if (query.minRating !== undefined) {
-    filter.rating = { ...filter.rating, $gte: Number(query.minRating) }
+  if (query.minRating || query.maxRating) {
+    filter.rating = {}
+    if (query.minRating) filter.rating.$gte = Number(query.minRating)
+    if (query.maxRating) filter.rating.$lte = Number(query.maxRating)
   }
 
-  if (query.maxRating !== undefined) {
-    filter.rating = { ...filter.rating, $lte: Number(query.maxRating) }
-  }
-
-  return await paginate(Review, filter, query, REVIEW_SAFE_FIELDS)
+  return await paginate(Review, filter, query, REVIEW_SAFE_FIELDS, [{
+    path: 'reviewerId',
+    select: '_id fullName email avatar'
+  }, {
+    path: 'revieweeId',
+    select: '_id fullName email avatar'
+  }])
 }
 
 const getReviewById = async (id: string) => {
@@ -90,9 +111,8 @@ const getReviewById = async (id: string) => {
 
   const review = await Review.findById(id)
     .select(REVIEW_SAFE_FIELDS)
-    .populate('contractor_id', '_id name avatar')
-    .populate('freelancer_id', '_id name avatar')
-    .populate('contract_id', '_id project_id status')
+    .populate('reviewerId', '_id fullName email avatar')
+    .populate('revieweeId', '_id fullName email avatar')
     .lean()
 
   if (!review) {
@@ -107,53 +127,62 @@ const getReviewsByContractId = async (contractId: string) => {
     throw new Error('Invalid contract ID format')
   }
 
-  const reviews = await Review.find({ contract_id: new mongoose.Types.ObjectId(contractId) } as any)
+  const reviews = await Review.find({ contractId: new mongoose.Types.ObjectId(contractId) } as any)
     .select(REVIEW_SAFE_FIELDS)
-    .populate('contractor_id', '_id name avatar')
-    .populate('freelancer_id', '_id name avatar')
+    .populate('reviewerId', '_id fullName email avatar')
+    .populate('revieweeId', '_id fullName email avatar')
     .lean()
 
   return reviews || []
 }
 
-const getReviewsByFreelancerId = async (freelancerId: string) => {
-  if (!mongoose.Types.ObjectId.isValid(freelancerId)) {
-    throw new Error('Invalid freelancer ID format')
+const getReviewsByUserId = async (userId: string, isReceivedReview: boolean) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID format')
   }
 
-  const reviews = await Review.find({ freelancer_id: new mongoose.Types.ObjectId(freelancerId) } as any)
+  const filter = isReceivedReview ? { revieweeId: userId } : { reviewerId: userId }
+
+  const reviews = await Review.find(filter as any)
     .select(REVIEW_SAFE_FIELDS)
-    .populate('contractor_id', '_id name avatar')
+    .populate('reviewerId', '_id fullName email avatar')
+    .populate('revieweeId', '_id fullName email avatar')
+    .sort({ createdAt: -1 })
     .lean()
 
   return reviews || []
 }
 
-const getReviewsByContractorId = async (contractorId: string) => {
-  if (!mongoose.Types.ObjectId.isValid(contractorId)) {
-    throw new Error('Invalid contractor ID format')
+const getMyReviews = async (userId: string, isReceivedReview?: boolean) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID format')
   }
 
-  const reviews = await Review.find({ contractor_id: new mongoose.Types.ObjectId(contractorId) } as any)
+  const filter = isReceivedReview !== undefined ?
+   (isReceivedReview ? { revieweeId: userId } : { reviewerId: userId }) : {}
+
+  const reviews = await Review.find(filter as any)
     .select(REVIEW_SAFE_FIELDS)
-    .populate('freelancer_id', '_id name avatar')
+    .populate('reviewerId', '_id fullName email avatar')
+    .populate('revieweeId', '_id fullName email avatar')
+    .sort({ createdAt: -1 })
     .lean()
 
   return reviews || []
 }
 
-const getAverageRating = async (freelancerId: string) => {
-  if (!mongoose.Types.ObjectId.isValid(freelancerId)) {
-    throw new Error('Invalid freelancer ID format')
+const getAverageRating = async (userId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID format')
   }
 
   const result = await Review.aggregate([
-    { $match: { freelancer_id: new mongoose.Types.ObjectId(freelancerId) } },
+    { $match: { revieweeId: new mongoose.Types.ObjectId(userId) } },
     {
       $group: {
-        _id: '$freelancer_id',
-        averageRating: { $avg: '$rating' },
-        totalReviews: { $sum: 1 }
+        _id: '$revieweeId',
+        avg: { $avg: '$rating' },
+        count: { $sum: 1 }
       }
     }
   ])
@@ -163,18 +192,18 @@ const getAverageRating = async (freelancerId: string) => {
   }
 
   return {
-    averageRating: Math.round(result[0].averageRating * 10) / 10,
-    totalReviews: result[0].totalReviews
+    averageRating: Math.round(result[0].avg * 10) / 10,
+    totalReviews: result[0].count
   }
 }
 
-const updateReview = async (id: string, contractorId: string, data: IUpdateReview) => {
+const updateReview = async (id: string, reviewerId: string, data: IUpdateReview) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new Error('Invalid review ID format')
   }
 
-  if (!mongoose.Types.ObjectId.isValid(contractorId)) {
-    throw new Error('Invalid contractor ID format')
+  if (!mongoose.Types.ObjectId.isValid(reviewerId)) {
+    throw new Error('Invalid reviewer ID format')
   }
 
   if (data.rating !== undefined && (data.rating < 1 || data.rating > 5)) {
@@ -187,12 +216,14 @@ const updateReview = async (id: string, contractorId: string, data: IUpdateRevie
     throw new Error('Review not found')
   }
 
-  if (findReview.contractor_id?.toString() !== contractorId) {
+  if (findReview.reviewerId?.toString() !== reviewerId) {
     throw new Error('You are not authorized to update this review')
   }
 
   const review = await Review.findByIdAndUpdate(id, data, { new: true })
     .select(REVIEW_SAFE_FIELDS)
+    .populate('reviewerId', '_id fullName email avatar')
+    .populate('revieweeId', '_id fullName email avatar')
     .lean()
 
   if (!review) {
@@ -202,13 +233,13 @@ const updateReview = async (id: string, contractorId: string, data: IUpdateRevie
   return review
 }
 
-const deleteReview = async (id: string, contractorId: string) => {
+const deleteReview = async (id: string, reviewerId: string) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new Error('Invalid review ID format')
   }
 
-  if (!mongoose.Types.ObjectId.isValid(contractorId)) {
-    throw new Error('Invalid contractor ID format')
+  if (!mongoose.Types.ObjectId.isValid(reviewerId)) {
+    throw new Error('Invalid reviewer ID format')
   }
 
   const findReview = await Review.findById(id)
@@ -217,7 +248,7 @@ const deleteReview = async (id: string, contractorId: string) => {
     throw new Error('Review not found')
   }
 
-  if (findReview.contractor_id?.toString() !== contractorId) {
+  if (findReview.reviewerId?.toString() !== reviewerId) {
     throw new Error('You are not authorized to delete this review')
   }
 
@@ -231,9 +262,9 @@ export const reviewService = {
   getAllReviews,
   getReviewById,
   getReviewsByContractId,
-  getReviewsByFreelancerId,
-  getReviewsByContractorId,
+  getReviewsByUserId,
   getAverageRating,
   updateReview,
-  deleteReview
+  deleteReview,
+  getMyReviews
 }

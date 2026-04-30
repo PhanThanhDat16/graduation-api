@@ -2,19 +2,24 @@ import mongoose, { Document } from 'mongoose'
 
 const reviewSchema = new mongoose.Schema<IReview>(
   {
-    contract_id: {
+    contractId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Contract',
       required: true
     },
-    contractor_id: {
+    reviewerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
-    freelancer_id: {
+    revieweeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      required: true
+    },
+    role: {
+      type: String,
+      enum: ['freelancer', 'contractor'],
       required: true
     },
     rating: {
@@ -32,14 +37,15 @@ const reviewSchema = new mongoose.Schema<IReview>(
   }
 )
 
-reviewSchema.index({ contract_id: 1, contractor_id: 1, rating: 1 })
+reviewSchema.index({ contractId: 1, reviewerId: 1, revieweeId: 1, role: 1 }, { unique: true })
 
 export const Review = mongoose.model<IReview>('Review', reviewSchema)
 
 export interface IReview extends Document {
-  contract_id: mongoose.Schema.Types.ObjectId
-  contractor_id: mongoose.Schema.Types.ObjectId
-  freelancer_id: mongoose.Schema.Types.ObjectId
+  contractId: mongoose.Schema.Types.ObjectId
+  reviewerId: mongoose.Schema.Types.ObjectId
+  revieweeId: mongoose.Schema.Types.ObjectId
+  role: 'freelancer' | 'contractor'
   rating: number
   comment?: string
 }
