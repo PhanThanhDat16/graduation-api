@@ -129,7 +129,7 @@
  *           type: string
  *         avatar:
  *           type: string
- *     AccountDataResponseInWithdraw:
+ *     AccountBankDataResponseInWithdraw:
  *       type: object
  *       properties:
  *         _id:
@@ -161,7 +161,7 @@
  *         _id:
  *           type: string
  *         account_id:
- *           $ref: '#/components/schemas/AccountDataResponseInWithdraw'
+ *           $ref: '#/components/schemas/AccountBankDataResponseInWithdraw'
  *         amount:
  *           type: number
  *         status:

@@ -138,7 +138,8 @@ const updateContract = expressAsyncHandler(async (req: RequestWithUser, res: Res
     total_amount,
     admin_fee,
     freelancer_deposit,
-    deadline
+    deadline,
+    status
   } = req.body
 
   const contract = await contractService.updateContract(id, userId as string, {
@@ -148,7 +149,8 @@ const updateContract = expressAsyncHandler(async (req: RequestWithUser, res: Res
     total_amount,
     admin_fee,
     freelancer_deposit,
-    deadline: deadline ? new Date(deadline) : undefined
+    deadline: deadline ? new Date(deadline) : undefined,
+    status
   })
 
   res.status(HttpStatus.OK).json({

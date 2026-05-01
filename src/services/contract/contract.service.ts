@@ -81,6 +81,7 @@ const getContractById = async (contractId: string) => {
   }
 
   const contract = await Contract.findById(contractId)
+    .populate('project_id', '_id title description')
     .populate('contractor_id', '_id fullName email avatar')
     .populate('freelancer_id', '_id fullName email avatar')
     .populate('admin_id', '_id fullName email')
@@ -114,7 +115,11 @@ const getAllContracts = async (query: PaginationQuery & ContractFilter) => {
   if (query.freelancer_id) filter.freelancer_id = new mongoose.Types.ObjectId(query.freelancer_id)
   if (query.project_id) filter.project_id = new mongoose.Types.ObjectId(query.project_id)
 
-  return await paginate(Contract, filter, query, CONTRACT_FIELDS)
+  return await paginate(Contract, filter, query, CONTRACT_FIELDS, [
+    { path: 'project_id', select: '_id title description' },
+    { path: 'contractor_id', select: '_id fullName email avatar' },
+    { path: 'freelancer_id', select: '_id fullName email avatar' }
+  ])
 }
 
 // Get my contracts
@@ -133,7 +138,11 @@ const getMyContracts = async (userId: string, query: PaginationQuery & ContractF
   if (query.status) filter.status = query.status
   if (query.escrow_status) filter.escrow_status = query.escrow_status
 
-  return await paginate(Contract, filter, query, CONTRACT_FIELDS)
+  return await paginate(Contract, filter, query, CONTRACT_FIELDS, [
+    { path: 'project_id', select: '_id title description' },
+    { path: 'contractor_id', select: '_id fullName email avatar' },
+    { path: 'freelancer_id', select: '_id fullName email avatar' }
+  ])
 }
 
 // Update contract
@@ -157,6 +166,8 @@ const updateContract = async (contractId: string, userId: string, data: IUpdateC
   }
 
   const updateData: any = { last_updated_at: new Date() }
+
+  if (data.status !== undefined) updateData.status = data.status
 
   // Contractor có thể update các field này
   if (isContractor) {
