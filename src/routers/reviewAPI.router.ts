@@ -4,17 +4,17 @@ import express from 'express'
 
 const router = express.Router()
 
-// Public routes
-router.get('/', reviewController.getAllReviews)
-//router.get('/:id', reviewController.getReviewById)
-router.get('/user/:userId', reviewController.getReviewsByUserId)
-router.get('/contract/:contractId', reviewController.getReviewsByContractId)
-router.get('/freelancer/:freelancerId/average-rating', reviewController.getAverageRating)
-
 // Authenticated routes
 router.post('/', requireAuth, reviewController.createReview)
 router.get('/me', requireAuth, reviewController.getMyReviews)
 router.put('/:id', requireAuth, reviewController.updateReview)
 router.delete('/:id', requireAuth, reviewController.deleteReview)
+
+// Public routes
+router.get('/', reviewController.getAllReviews)
+router.get('/user/:userId', reviewController.getReviewsByUserId)
+router.get('/user/:userId/average-rating', reviewController.getAverageRating)
+router.get('/contract/:contractId', reviewController.getReviewsByContractId)
+router.get('/:id', reviewController.getReviewById)
 
 export const routerReview = router

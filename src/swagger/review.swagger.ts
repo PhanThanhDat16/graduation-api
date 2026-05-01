@@ -36,37 +36,52 @@
  *         comment:
  *           type: string
  *           example: "Great job!"
+ *     UserReviewObject:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: "69ec4f6eb4b2bd652c26743d"
+ *         avatar:
+ *           type: string
+ *           example: "https://api.dicebear.com/7.x/identicon/svg?seed=ngothanhtien1406%40gmail.com"
+ *         email:
+ *           type: string
+ *           example: "ngothanhtien1406@gmail.com"
+ *         fullName:
+ *           type: string
+ *           example: "Ngô Thành Tiến"
  *     ReviewObject:
  *       type: object
  *       properties:
  *         _id:
  *           type: string
- *           example: "60a7b2f7c6e9fa001734acfe"
+ *           example: "69f375b84525fe164ac54af4"
  *         contractId:
  *           type: string
- *           example: "60a7b2f7c6e9fa001734acfe"
+ *           example: "69ddfeee1dfc5f268af74bc0"
  *         reviewerId:
- *           type: string
- *           example: "60a7b2f7c6e9fa001734acfd"
+ *           $ref: '#/components/schemas/UserReviewObject'
  *         revieweeId:
- *           type: string
- *           example: "60a7b2f7c6e9fa001734acfe"
+ *           $ref: '#/components/schemas/UserReviewObject'
  *         role:
  *           type: string
  *           enum: [freelancer, contractor]
  *           example: "freelancer"
  *         rating:
  *           type: number
- *           example: 5
+ *           example: 4.9
  *         comment:
  *           type: string
- *           example: "Great job!"
+ *           example: "It's very great company i ever seen before gooddddd"
  *         createdAt:
  *           type: string
  *           format: date-time
+ *           example: "2026-04-30T15:31:04.538Z"
  *         updatedAt:
  *           type: string
  *           format: date-time
+ *           example: "2026-04-30T15:38:43.731Z"
  *     ReviewResponse:
  *       type: object
  *       properties:
@@ -85,6 +100,23 @@
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/ReviewObject'
+ *     UserReviewsResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: "Get reviews successfully"
+ *         data:
+ *           type: object
+ *           properties:
+ *             received:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ReviewObject'
+ *             given:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ReviewObject'
  *     ReviewListResponse:
  *       type: object
  *       properties:
@@ -182,21 +214,6 @@
  *           enum: [asc, desc]
  *         description: Sort order
  *       - in: query
- *         name: contractId
- *         schema:
- *           type: string
- *         description: Filter by contract ID
- *       - in: query
- *         name: reviewerId
- *         schema:
- *           type: string
- *         description: Filter by reviewer ID
- *       - in: query
- *         name: revieweeId
- *         schema:
- *           type: string
- *         description: Filter by reviewee ID
- *       - in: query
  *         name: role
  *         schema:
  *           type: string
@@ -268,17 +285,18 @@
  *           type: string
  *         description: User ID
  *       - in: query
- *         name: isReceivedReview
+ *         name: type
  *         schema:
- *           type: boolean
- *         description: If true, gets reviews where the user is the reviewee. Otherwise gets reviews written by the user.
+ *           type: string
+ *           enum: [received, given]
+ *         description: Type of review (received or given)
  *     responses:
  *       200:
  *         description: List of reviews
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ArrayReviewResponse'
+ *               $ref: '#/components/schemas/UserReviewsResponse'
  *       404:
  *         description: Review not found
  *         content:
@@ -297,17 +315,18 @@
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: isReceivedReview
+ *         name: type
  *         schema:
- *           type: boolean
- *         description: If true, gets reviews where the user is the reviewee. Otherwise gets reviews written by the user.
+ *           type: string
+ *           enum: [received, given]
+ *         description: Type of review (received or given)
  *     responses:
  *       200:
  *         description: List of reviews
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ArrayReviewResponse'
+ *               $ref: '#/components/schemas/UserReviewsResponse'
  *       404:
  *         description: Review not found
  *         content:
@@ -318,17 +337,45 @@
 
 /**
  * @openapi
- * /api/reviews/freelancer/{freelancerId}/average-rating:
+ * /api/reviews/{id}:
  *   get:
  *     tags: [Review]
- *     summary: Get average rating of a freelancer by freelancer ID
+ *     summary: Get a review by ID
  *     parameters:
  *       - in: path
- *         name: freelancerId
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: Freelancer ID
+ *         description: Review ID
+ *     responses:
+ *       200:
+ *         description: Review details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReviewResponse'
+ *       404:
+ *         description: Review not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReviewErrorResponse'
+ */
+
+/**
+ * @openapi
+ * /api/reviews/user/{userId}/average-rating:
+ *   get:
+ *     tags: [Review]
+ *     summary: Get average rating of a user by user ID
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
  *     responses:
  *       200:
  *         description: Average rating details
