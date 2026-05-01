@@ -43,9 +43,6 @@ const getAllReviews = expressAsyncHandler(async (req: Request, res: Response) =>
     limit: query.limit ? Number(query.limit) : 10,
     sortBy: query.sortBy,
     sortOrder: query.sortOrder,
-    contractId: query.contractId,
-    reviewerId: query.reviewerId,
-    revieweeId: query.revieweeId,
     role: query.role,
     rating: query.rating !== undefined ? Number(query.rating) : undefined,
     minRating: query.minRating !== undefined ? Number(query.minRating) : undefined,
@@ -88,64 +85,53 @@ const getReviewsByContractId = expressAsyncHandler(async (req: Request, res: Res
   })
 })
 
-// const getReviewsByFreelancerId = expressAsyncHandler(async (req: Request, res: Response) => {
-//   const { freelancerId } = req.params
-
-//   if (!freelancerId) {
-//     res.status(HttpStatus.BAD_REQUEST).json({
-//       message: 'Freelancer ID is required'
-//     })
-//     return
-//   }
-
-//   const reviews = await reviewService.getReviewsByFreelancerId(freelancerId as string)
-
-//   res.status(HttpStatus.OK).json({
-//     message: 'Get reviews by freelancer successfully',
-//     data: reviews
-//   })
-// })
-
-// const getReviewsByContractorId = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-//   const contractorId = req.user?._id
-
-//   if (!contractorId) {
-//     res.status(HttpStatus.BAD_REQUEST).json({
-//       message: 'Contractor ID is required'
-//     })
-//     return
-//   }
-
-//   const reviews = await reviewService.getReviewsByContractorId(contractorId as string)
-
-//   res.status(HttpStatus.OK).json({
-//     message: 'Get reviews by contractor successfully',
-//     data: reviews
-//   })
-// })
-
 const getReviewsByUserId = expressAsyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params
-  const isReceivedReview = req.query.isReceivedReview === 'true'
+  const type = req.query.type as 'received' | 'given'
 
-  if (!userId) {
+  if(!userId){
     res.status(HttpStatus.BAD_REQUEST).json({
       message: 'User ID is required'
     })
     return
   }
 
-  const reviews = await reviewService.getReviewsByUserId(userId as string, isReceivedReview)
+  const reviews = await reviewService.getReviewsByUserId(userId as string, type)
 
   res.status(HttpStatus.OK).json({
-    message: 'Get reviews by user successfully',
-    data: reviews
+    message: `Get reviews by user successfully`,
+    data: {
+      received: reviews.received,
+      given: reviews.given
+    }
   })
 })
 
 const getMyReviews = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const userId = req.user?._id
-  const isReceivedReview = req.query.isReceivedReview as unknown as boolean
+  const type = req.query.type as 'received' | 'given'
+
+  if(!userId){
+    res.status(HttpStatus.UNAUTHORIZED).json({
+      message: 'Unauthorized'
+    })
+    return
+  }
+
+  const reviews = await reviewService.getReviewsByUserId(userId as string, type)
+
+  res.status(HttpStatus.OK).json({
+    message: `Get my reviews successfully`,
+    data: {
+      received: reviews.received,
+      given: reviews.given
+    }
+  })
+})
+
+const getAverageRating = expressAsyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.params
+
   if (!userId) {
     res.status(HttpStatus.BAD_REQUEST).json({
       message: 'User ID is required'
@@ -153,25 +139,7 @@ const getMyReviews = expressAsyncHandler(async (req: RequestWithUser, res: Respo
     return
   }
 
-  const reviews = await reviewService.getMyReviews(userId as string, isReceivedReview)
-
-  res.status(HttpStatus.OK).json({
-    message: 'Get my reviews successfully',
-    data: reviews
-  })
-})
-
-const getAverageRating = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { freelancerId } = req.params
-
-  if (!freelancerId) {
-    res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'Freelancer ID is required'
-    })
-    return
-  }
-
-  const result = await reviewService.getAverageRating(freelancerId as string)
+  const result = await reviewService.getAverageRating(userId as string)
 
   res.status(HttpStatus.OK).json({
     message: 'Get average rating successfully',
@@ -190,16 +158,16 @@ const updateReview = expressAsyncHandler(async (req: RequestWithUser, res: Respo
   }
 
   const { rating, comment } = req.body
-  const contractorId = req.user?.id
+  const reviewerId = req.user?._id
 
-  if (!contractorId) {
+  if (!reviewerId) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'Contractor ID is required'
+      message: 'Reviewer ID is required'
     })
     return
   }
 
-  const review = await reviewService.updateReview(id as string, contractorId as string, {
+  const review = await reviewService.updateReview(id as string, reviewerId as string, {
     rating: rating !== undefined ? Number(rating) : undefined,
     comment
   })
@@ -227,16 +195,16 @@ const deleteReview = expressAsyncHandler(async (req: RequestWithUser, res: Respo
     return
   }
 
-  const contractorId = req.user?.id
+  const reviewerId = req.user?._id
 
-  if (!contractorId) {
+  if (!reviewerId) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'Contractor ID is required'
+      message: 'Reviewer ID is required'
     })
     return
   }
 
-  const result = await reviewService.deleteReview(id as string, contractorId as string)
+  const result = await reviewService.deleteReview(id as string, reviewerId as string)
 
   if (!result) {
     res.status(HttpStatus.BAD_REQUEST).json({

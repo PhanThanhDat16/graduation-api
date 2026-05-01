@@ -69,20 +69,8 @@ const createReview = async (reviewerId: string, data: ICreateReview) => {
 const getAllReviews = async (query: ReviewQuery) => {
   const filter: any = {}
 
-  if (query.contractId) {
-    filter.contractId = new mongoose.Types.ObjectId(query.contractId)
-  }
-
   if(query.role){
     filter.role = query.role
-  }
-
-  if(query.reviewerId){
-    filter.reviewerId = new mongoose.Types.ObjectId(query.reviewerId)
-  }
-
-  if(query.revieweeId){
-    filter.revieweeId = new mongoose.Types.ObjectId(query.revieweeId)
   }
 
   if (query.rating !== undefined) {
@@ -136,14 +124,35 @@ const getReviewsByContractId = async (contractId: string) => {
   return reviews || []
 }
 
-const getReviewsByUserId = async (userId: string, isReceivedReview: boolean) => {
+const getReviewsByUserId = async (userId: string, type?: string) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error('Invalid user ID format')
   }
 
-  const filter = isReceivedReview ? { revieweeId: userId } : { reviewerId: userId }
+  if(type === 'received'){
+    const received = await getReceived(userId)
+    return { received: received, given: [] }
+  }
 
-  const reviews = await Review.find(filter as any)
+  if(type === 'given'){
+    const given = await getGiven(userId)
+    return { received: [], given: given }
+  }
+
+  const [received, given] = await Promise.all([
+    getReceived(userId),
+    getGiven(userId)
+  ])
+
+  return { received, given }
+}
+
+const getReceived = async (userId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error('Invalid user ID format')
+  }
+
+  const reviews = await Review.find({ revieweeId: new mongoose.Types.ObjectId(userId) } as any)
     .select(REVIEW_SAFE_FIELDS)
     .populate('reviewerId', '_id fullName email avatar')
     .populate('revieweeId', '_id fullName email avatar')
@@ -153,15 +162,12 @@ const getReviewsByUserId = async (userId: string, isReceivedReview: boolean) => 
   return reviews || []
 }
 
-const getMyReviews = async (userId: string, isReceivedReview?: boolean) => {
+const getGiven = async (userId: string) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error('Invalid user ID format')
   }
 
-  const filter = isReceivedReview !== undefined ?
-   (isReceivedReview ? { revieweeId: userId } : { reviewerId: userId }) : {}
-
-  const reviews = await Review.find(filter as any)
+  const reviews = await Review.find({ reviewerId: new mongoose.Types.ObjectId(userId) } as any)
     .select(REVIEW_SAFE_FIELDS)
     .populate('reviewerId', '_id fullName email avatar')
     .populate('revieweeId', '_id fullName email avatar')
@@ -224,6 +230,7 @@ const updateReview = async (id: string, reviewerId: string, data: IUpdateReview)
     .select(REVIEW_SAFE_FIELDS)
     .populate('reviewerId', '_id fullName email avatar')
     .populate('revieweeId', '_id fullName email avatar')
+    .sort({ createdAt: -1 })
     .lean()
 
   if (!review) {
@@ -265,6 +272,5 @@ export const reviewService = {
   getReviewsByUserId,
   getAverageRating,
   updateReview,
-  deleteReview,
-  getMyReviews
+  deleteReview
 }
