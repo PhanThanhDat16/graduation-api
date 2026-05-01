@@ -4,7 +4,7 @@ import { paginate } from '@/utils/paginate'
 import mongoose from 'mongoose'
 
 const PROJECT_SAFE_FIELDS =
-  '_id contractorId title description category skills budgetMin budgetMax status likes listLike createdAt updatedAt'
+  '_id contractorId title description category skills images budgetMin budgetMax status likes listLike createdAt updatedAt'
 
 const createProject = async (data: IProjectCreate) => {
   const project = await Project.create(data as any)
