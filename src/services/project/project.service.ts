@@ -3,7 +3,7 @@ import { Project } from '@/models/project.model'
 import { paginate } from '@/utils/paginate'
 
 const PROJECT_SAFE_FIELDS =
-  '_id contractorId title description category skills budgetMin budgetMax status likes listLike createdAt updatedAt'
+  '_id contractorId title description category skills images budgetMin budgetMax status likes listLike createdAt updatedAt'
 
 const CONTRACTOR_SAFE_FIELDS = '_id fullName email avatar ratingAvg address phone status ratingCount isVerified'
 

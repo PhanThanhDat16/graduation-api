@@ -22,6 +22,7 @@ export interface IProjectCreate {
   description: string
   category: string
   skills?: string[]
+  images?: string[]
   budgetMin: number
   budgetMax: number
   status?: EProjectStatus
@@ -32,6 +33,7 @@ export interface IProjectUpdate {
   description?: string
   category?: string
   skills?: string[]
+  images?: string[]
   budgetMin?: number
   budgetMax?: number
   status?: EProjectStatus

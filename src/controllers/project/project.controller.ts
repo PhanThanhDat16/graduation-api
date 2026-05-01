@@ -6,7 +6,7 @@ import { projectService } from '@/services/project/project.service'
 import { RequestWithUser } from '@/middlewares/auth.middlewares'
 
 const createProject = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const { title, description, category, skills, budgetMin, budgetMax, status } = req.body
+  const { title, description, category, skills, images, budgetMin, budgetMax, status } = req.body
   const contractorId = req.user?.id
 
   if (!title || !description || !category || !contractorId || budgetMin === undefined || budgetMax === undefined) {
@@ -16,11 +16,19 @@ const createProject = expressAsyncHandler(async (req: RequestWithUser, res: Resp
     return
   }
 
+  if (images && !Array.isArray(images)) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'Images must be an array'
+    })
+    return
+  }
+
   const project = await projectService.createProject({
     title,
     description,
     category,
     skills,
+    images,
     budgetMin,
     budgetMax,
     status,
@@ -110,7 +118,7 @@ const updateProject = expressAsyncHandler(async (req: RequestWithUser, res: Resp
     return
   }
 
-  const { title, description, category, skills, budgetMin, budgetMax, status } = req.body
+  const { title, description, category, skills, images, budgetMin, budgetMax, status } = req.body
   const contractorId = req.user?.id
 
   if (!contractorId) {
@@ -125,6 +133,7 @@ const updateProject = expressAsyncHandler(async (req: RequestWithUser, res: Resp
     description,
     category,
     skills,
+    images,
     budgetMin,
     budgetMax,
     status

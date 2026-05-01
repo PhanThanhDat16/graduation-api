@@ -27,6 +27,11 @@
  *           items:
  *             type: string
  *           example: ["react", "nodejs", "typescript"]
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ["https://res.cloudinary.com/demo/image/upload/v1598989898/sample.jpg"]
  *         budgetMin:
  *           type: number
  *           example: 500
@@ -55,6 +60,11 @@
  *           items:
  *             type: string
  *           example: ["flutter", "dart"]
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ["https://res.cloudinary.com/demo/image/upload/v1598989898/sample.jpg"]
  *         budgetMin:
  *           type: number
  *           example: 1000
@@ -89,6 +99,11 @@
  *           items:
  *             type: string
  *           example: ["react", "nodejs"]
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ["https://res.cloudinary.com/demo/image/upload/v1598989898/sample.jpg"]
  *         budgetMin:
  *           type: number
  *           example: 500
