@@ -6,7 +6,6 @@ import asyncHandler from 'express-async-handler'
 
 // Constants
 import { HttpStatus } from '@/constants/http.constants'
-
 import { filesEndpoint } from '@/utils/file.ultils'
 
 export const uploadController = {
