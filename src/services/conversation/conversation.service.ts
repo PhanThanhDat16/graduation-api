@@ -67,7 +67,7 @@ const toPublicUser = (u: unknown): PublicChatUser | null => {
   const o = u as { _id: { toString(): string }; fullName?: string; avatar?: string }
   return {
     _id: o._id.toString(),
-    full_name: o.fullName ?? '',
+    fullName: o.fullName ?? '',
     avatar: o.avatar ?? ''
   }
 }
@@ -412,13 +412,13 @@ export const conversationService = {
       .lean()) as any[]
 
     return groups.map((g) => {
-      const ownerIdStr = g.ownerId?._id ? g.ownerId._id.toString() : g.ownerId ? g.ownerId.toString() : null
+      // const ownerIdStr = g.ownerId?._id ? g.ownerId._id.toString() : g.ownerId ? g.ownerId.toString() : null
 
       return {
         _id: g._id.toString(),
         memberIds: Array.isArray(g.memberIds) ? g.memberIds : [],
-        ownerId: ownerIdStr,
-        ownerInfo: toPublicUser(g.ownerId),
+        ownerId: toPublicUser(g.ownerId),
+        // ownerInfo: toPublicUser(g.ownerId),
         type: g.type as EChatGroupType,
         disputeId: g.disputeId ? g.disputeId.toString() : null,
         assignedStaffId: g.assignedStaffId?._id ? g.assignedStaffId._id.toString() : null,

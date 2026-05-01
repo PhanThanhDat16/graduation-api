@@ -24,7 +24,7 @@ const toPublicUser = (u: unknown): PublicChatUser | null => {
   const o = u as { _id: { toString(): string }; fullName?: string; avatar?: string }
   return {
     _id: o._id.toString(),
-    full_name: o.fullName ?? '',
+    fullName: o.fullName ?? '',
     avatar: o.avatar ?? ''
   }
 }
@@ -59,6 +59,7 @@ const toMessageWithRelations = (doc: unknown): MessageWithRelations => {
     _id: { toString(): string }
     groupId: { toString(): string }
     senderId: unknown
+    senderType: string
     type: EMessageType
     content: string
     replyTo: unknown
@@ -68,6 +69,7 @@ const toMessageWithRelations = (doc: unknown): MessageWithRelations => {
     _id: m._id.toString(),
     groupId: m.groupId.toString(),
     senderId: toPublicUser(m.senderId),
+    senderType: m.senderType,
     type: m.type,
     content: m.content,
     replyTo: formatReply(m.replyTo),
@@ -87,7 +89,7 @@ export const chatService = {
 
     const [raw, total] = await Promise.all([
       Message.find(filter)
-        .sort({ createdAt: 1 })
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(safeLimit)
         .populate('senderId', 'fullName avatar')
@@ -100,7 +102,7 @@ export const chatService = {
       Message.countDocuments(filter)
     ])
 
-    const data = raw.map((doc) => toMessageWithRelations(doc as any))
+    const data = raw.map((doc) => toMessageWithRelations(doc as any)).reverse()
 
     return {
       data,
@@ -131,7 +133,7 @@ export const chatService = {
 
     const [raw, total] = await Promise.all([
       Message.find(filter)
-        .sort({ createdAt: 1 })
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(safeLimit)
         .populate('senderId', 'fullName avatar')
@@ -144,7 +146,7 @@ export const chatService = {
       Message.countDocuments(filter)
     ])
 
-    const data = raw.map((doc) => toMessageWithRelations(doc as any))
+    const data = raw.map((doc) => toMessageWithRelations(doc as any)).reverse()
 
     return {
       data,
@@ -266,10 +268,11 @@ export const chatService = {
       senderId: doc.senderId
         ? {
             _id: doc.senderId._id.toString(),
-            full_name: doc.senderId.fullName ?? '',
+            fullName: doc.senderId.fullName ?? '',
             avatar: doc.senderId.avatar ?? ''
           }
         : null,
+      senderType: doc.senderType,
       type: doc.type,
       content: doc.content,
       replyTo: doc.replyTo
@@ -279,7 +282,7 @@ export const chatService = {
             senderId: doc.replyTo.senderId
               ? {
                   _id: doc.replyTo.senderId._id.toString(),
-                  full_name: doc.replyTo.senderId.fullName ?? '',
+                  fullName: doc.replyTo.senderId.fullName ?? '',
                   avatar: doc.replyTo.senderId.avatar ?? ''
                 }
               : null,

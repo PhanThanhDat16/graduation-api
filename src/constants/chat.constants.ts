@@ -18,7 +18,7 @@ export enum EMessageType {
 
 export interface PublicChatUser {
   _id: string
-  full_name: string
+  fullName: string
   avatar: string
 }
 
@@ -47,6 +47,7 @@ export interface MessageWithRelations {
   _id: string
   groupId: string
   senderId: PublicChatUser | null
+  senderType: string
   type: EMessageType
   content: string
   replyTo: ReplyPreview | null
