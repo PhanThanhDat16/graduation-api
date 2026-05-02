@@ -197,15 +197,14 @@ export const chatService = {
       throw new Error('Conversation not found')
     }
 
-    const isSupport = ['guest_support', 'user_support'].includes(conversation.type)
+    const isSupport = ['guest_support', 'user_support', 'contract_chat'].includes(conversation.type)
 
-    // Staff auto-assign and permission check for support conversations
+    // Staff auto-assign and auto-join for support/contract conversations
     if (isSupport && userId) {
       const sender = (await User.findById(userId).select('role').lean()) as any
       if (sender && sender.role === 'staff') {
+        // Auto-assign first staff to reply
         if (!conversation.assignedStaffId) {
-          // Auto-assign: first staff to reply
-          conversation.assignedStaffId = new mongoose.Types.ObjectId(userId)
           await ChatGroup.updateOne(
             { _id: conversation._id },
             {
@@ -213,21 +212,25 @@ export const chatService = {
               $addToSet: { memberIds: userId }
             }
           )
-          // Add staff as ChatMember if not already
-          await ChatMember.updateOne(
-            { groupId: conversation._id, userId: new mongoose.Types.ObjectId(userId) },
-            {
-              $setOnInsert: {
-                groupId: conversation._id,
-                userId: new mongoose.Types.ObjectId(userId),
-                role: EChatMemberRole.MEMBER
-              }
-            },
-            { upsert: true }
+        } else {
+          // Any staff can reply — just ensure they are added to the group
+          await ChatGroup.updateOne(
+            { _id: conversation._id },
+            { $addToSet: { memberIds: userId } }
           )
-        } else if (conversation.assignedStaffId.toString() !== userId) {
-          throw new Error('Only the assigned staff can reply to this conversation')
         }
+        // Add staff as ChatMember if not already
+        await ChatMember.updateOne(
+          { groupId: conversation._id, userId: new mongoose.Types.ObjectId(userId) },
+          {
+            $setOnInsert: {
+              groupId: conversation._id,
+              userId: new mongoose.Types.ObjectId(userId),
+              role: EChatMemberRole.MEMBER
+            }
+          },
+          { upsert: true }
+        )
       }
     }
 
@@ -267,27 +270,27 @@ export const chatService = {
       groupId: doc.groupId.toString(),
       senderId: doc.senderId
         ? {
-            _id: doc.senderId._id.toString(),
-            fullName: doc.senderId.fullName ?? '',
-            avatar: doc.senderId.avatar ?? ''
-          }
+          _id: doc.senderId._id.toString(),
+          fullName: doc.senderId.fullName ?? '',
+          avatar: doc.senderId.avatar ?? ''
+        }
         : null,
       senderType: doc.senderType,
       type: doc.type,
       content: doc.content,
       replyTo: doc.replyTo
         ? {
-            _id: doc.replyTo._id.toString(),
-            content: doc.replyTo.content,
-            senderId: doc.replyTo.senderId
-              ? {
-                  _id: doc.replyTo.senderId._id.toString(),
-                  fullName: doc.replyTo.senderId.fullName ?? '',
-                  avatar: doc.replyTo.senderId.avatar ?? ''
-                }
-              : null,
-            createdAt: doc.replyTo.createdAt
-          }
+          _id: doc.replyTo._id.toString(),
+          content: doc.replyTo.content,
+          senderId: doc.replyTo.senderId
+            ? {
+              _id: doc.replyTo.senderId._id.toString(),
+              fullName: doc.replyTo.senderId.fullName ?? '',
+              avatar: doc.replyTo.senderId.avatar ?? ''
+            }
+            : null,
+          createdAt: doc.replyTo.createdAt
+        }
         : null,
       createdAt: doc.createdAt
     }
