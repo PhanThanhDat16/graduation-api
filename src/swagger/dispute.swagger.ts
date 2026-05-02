@@ -128,10 +128,10 @@
  *           enum: [extend, cancel, split]
  *         freelancerAmount:
  *           type: number
- *           description: Required for cancel/split. Must sum to total_escrow_amount
+ *           description: Required for cancel/split. Must sum to totalEscrowAmount
  *         contractorAmount:
  *           type: number
- *           description: Required for cancel/split. Must sum to total_escrow_amount
+ *           description: Required for cancel/split. Must sum to totalEscrowAmount
  *         newDeadline:
  *           type: string
  *           format: date-time

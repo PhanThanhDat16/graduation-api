@@ -60,16 +60,16 @@ export const paymentService = {
 
     // Step 1: Save transaction as PENDING
     const transaction = new WalletTransaction({
-        wallet_id: wallet._id,
+        walletId: wallet._id,
         amount: amount,
         type: type,
-        method_payment: method,
+        methodPayment: method,
         status: ETransactionStatus.PENDING,
-        user_id: userId,
+        userId: userId,
         description: description || `transaction from MoMo with amount [${amount}] VND`,
-        payment_order_id: orderId,
-        payment_request_id: requestId,
-        payment_order_info: orderInfo
+        paymentOrderId: orderId,
+        paymentRequestId: requestId,
+        paymentOrderInfo: orderInfo
     })
     await transaction.save()
 
@@ -133,7 +133,7 @@ export const paymentService = {
       if (momoResponse.resultCode !== 0) {
         // Update order to FAILED
         await WalletTransaction.findOneAndUpdate(
-          { payment_order_id: orderId },
+          { paymentOrderId: orderId },
           { status: ETransactionStatus.FAILED }
         );
         throw new Error(`MoMo API error: ${momoResponse.message} (code: ${momoResponse.resultCode})`);
@@ -153,7 +153,7 @@ export const paymentService = {
         });
         // Update order to FAILED
         await WalletTransaction.findOneAndUpdate(
-          { payment_order_id: orderId },
+          { paymentOrderId: orderId },
           { status: ETransactionStatus.FAILED }
         );
         throw new Error(`MoMo API request failed: ${error.message}`);
@@ -206,7 +206,7 @@ export const paymentService = {
       await session.withTransaction(async () => {
         // Tìm transaction và LOCK bản ghi này trong session
         const transaction = await WalletTransaction.findOne(
-          { payment_order_id: body.orderId },
+          { paymentOrderId: body.orderId },
           null,
           { session }
         );
@@ -232,7 +232,7 @@ export const paymentService = {
 
           // Cộng tiền ví
           await Wallet.findByIdAndUpdate(
-            transaction.wallet_id,
+            transaction.walletId,
             { $inc: { balance: transaction.amount } },
             { session, new: true }
           );
@@ -253,19 +253,19 @@ export const paymentService = {
    * Get order status by orderId.
    */
   getOrderStatus : async (orderId: string): Promise<ITransactionStatusResponse> => {
-    const order = await WalletTransaction.findOne({ payment_order_id: orderId }).populate("user_id", "fullName email");
+    const order = await WalletTransaction.findOne({ paymentOrderId: orderId }).populate("userId", "fullName email");
 
     if (!order) {
       throw new Error(`Order not found: ${orderId}`);
     }
 
     return {
-      payment_order_id: order.payment_order_id as string,
+      paymentOrderId: order.paymentOrderId as string,
       amount: order.amount,
-      fullName: (order.user_id as any).fullName || '',
-      email: (order.user_id as any).email || '',
+      fullName: (order.userId as any).fullName || '',
+      email: (order.userId as any).email || '',
       status: order.status as ETransactionStatus,
-      payment_request_id: order.payment_request_id as string,
+      paymentRequestId: order.paymentRequestId as string,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt
     };

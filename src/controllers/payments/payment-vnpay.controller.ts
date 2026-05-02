@@ -82,16 +82,16 @@ export const vnpayController = {
     
         // Step 1: Save transaction as PENDING
         const transaction = new WalletTransaction({
-            wallet_id: wallet._id,
+            walletId: wallet._id,
             amount: amount,
             type: type,
-            method_payment: method,
+            methodPayment: method,
             status: ETransactionStatus.PENDING,
-            user_id: userId,
+            userId: userId,
             description: description || `transaction from VNPAY with amount [${amount}] VND`,
-            payment_order_id: orderId,
-            payment_request_id: requestId,
-            payment_order_info: orderInfo
+            paymentOrderId: orderId,
+            paymentRequestId: requestId,
+            paymentOrderInfo: orderInfo
         })
 
         await transaction.save()
@@ -153,16 +153,16 @@ export const vnpayController = {
         const { vnp_ResponseCode, vnp_TxnRef } = query;
 
         // 2. Tìm transaction để lấy thông tin hiển thị
-        const transaction = await WalletTransaction.findOne({ payment_order_id: vnp_TxnRef as string }).populate('user_id', 'fullName email');
+        const transaction = await WalletTransaction.findOne({ paymentOrderId: vnp_TxnRef as string }).populate('userId', 'fullName email');
         if (!transaction) {
             res.status(HttpStatus.NOT_FOUND).json({ code: '01', message: 'Order Not Found' });
             return;
         }
 
-        const author_name = (transaction.user_id as any).fullName as string
-        const email = (transaction.user_id as any).email as string;
+        const authorName = (transaction.userId as any).fullName as string
+        const email = (transaction.userId as any).email as string;
 
-        res.redirect(`http://localhost:3000/payment-result?orderId=${vnp_TxnRef}&resultCode=${vnp_ResponseCode}&message=${transaction.description}&amount=${transaction.amount}&method_payment=${EPaymentMethod.VNPAY}&author_payment=${author_name}&email=${email}`)
+        res.redirect(`http://localhost:3000/payment-result?orderId=${vnp_TxnRef}&resultCode=${vnp_ResponseCode}&message=${transaction.description}&amount=${transaction.amount}&method_payment=${EPaymentMethod.VNPAY}&author_payment=${authorName}&email=${email}`)
         
     } catch (error) {
         logger.error('Handle return error:', error);
@@ -208,7 +208,7 @@ export const vnpayController = {
 
         await session.withTransaction(async () => {
           const transaction = await WalletTransaction.findOne(
-            { payment_order_id: vnp_TxnRef },
+            { paymentOrderId: vnp_TxnRef },
             null,
             { session }
           );
@@ -243,7 +243,7 @@ export const vnpayController = {
             await transaction.save({ session });
 
             await Wallet.findByIdAndUpdate(
-              transaction.wallet_id,
+              transaction.walletId,
               { $inc: { balance: transaction.amount } },
               { session }
             );
@@ -274,12 +274,12 @@ export const vnpayController = {
    */
   queryTransaction: expressAsyncHandler(async (req: Request, res: Response): Promise<void> => {
     try {
-      const { payment_order_id } = req.query;
+      const { paymentOrderId } = req.query;
 
-      if (!payment_order_id) {
+      if (!paymentOrderId) {
         res.status(HttpStatus.BAD_REQUEST).json({
           code: '01',
-          message: 'Missing payment_order_id',
+          message: 'Missing paymentOrderId',
         });
         return;
       }
@@ -287,10 +287,10 @@ export const vnpayController = {
       // Tìm order trong database
       const query: any = {};
 
-      if (payment_order_id) query.vnp_TxnRef = payment_order_id;
+      if (paymentOrderId) query.vnp_TxnRef = paymentOrderId;
 
       const transaction = await WalletTransaction.findOne({
-        payment_order_id: payment_order_id
+        paymentOrderId: paymentOrderId
       });
 
       if (!transaction) {
@@ -305,7 +305,7 @@ export const vnpayController = {
         code: '00',
         message: 'Success',
         data: {
-          payment_order_id: transaction.payment_order_id,
+          paymentOrderId: transaction.paymentOrderId,
           amount: transaction.amount,
           status: transaction.status,
           vnp_ResponseCode: transaction.vnp_ResponseCode,
@@ -342,7 +342,7 @@ export const vnpayController = {
       }
 
       // Tìm order
-      const transaction = await WalletTransaction.findOne({ payment_order_id: orderId });
+      const transaction = await WalletTransaction.findOne({ paymentOrderId: orderId });
       if (!transaction) {
         res.status(HttpStatus.NOT_FOUND).json({
           code: '02',
@@ -369,7 +369,7 @@ export const vnpayController = {
         vnp_Command: 'refund',
         vnp_TmnCode: vnpayConfig.vnp_TmnCode,
         vnp_TransactionType: '02',
-        vnp_TxnRef: transaction.payment_order_id,
+        vnp_TxnRef: transaction.paymentOrderId,
         vnp_Amount: amount * 100,
         vnp_TransactionNo: transactionNo,
         vnp_TransactionDate: transactionDate,

@@ -15,34 +15,34 @@ const createContract = expressAsyncHandler(async (req: RequestWithUser, res: Res
   }
 
   const {
-    project_id,
-    application_id,
-    freelancer_id,
+    projectId,
+    applicationId,
+    freelancerId,
     description,
-    contractor_terms,
-    freelancer_terms,
-    total_amount,
-    admin_fee,
-    freelancer_deposit,
+    contractorTerms,
+    freelancerTerms,
+    totalAmount,
+    adminFee,
+    freelancerDeposit,
     deadline
   } = req.body
 
-  if (!project_id || !freelancer_id || total_amount === undefined) {
-    res.status(HttpStatus.BAD_REQUEST).json({ message: 'project_id, freelancer_id and total_amount are required' })
+  if (!projectId || !freelancerId || totalAmount === undefined) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'projectId, freelancerId and totalAmount are required' })
     return
   }
 
   const contract = await contractService.createContract({
-    project_id,
-    application_id,
-    contractor_id: userId as string,
-    freelancer_id,
+    projectId,
+    applicationId,
+    contractorId: userId as string,
+    freelancerId,
     description,
-    contractor_terms,
-    freelancer_terms,
-    total_amount,
-    admin_fee,
-    freelancer_deposit,
+    contractorTerms,
+    freelancerTerms,
+    totalAmount,
+    adminFee,
+    freelancerDeposit,
     deadline: deadline ? new Date(deadline) : undefined
   })
 
@@ -77,10 +77,10 @@ const getAllContracts = expressAsyncHandler(async (req: Request, res: Response) 
     page: query.page ? Number(query.page) : 1,
     limit: query.limit ? Number(query.limit) : 10,
     status: query.status as string | undefined,
-    escrow_status: query.escrow_status as string | undefined,
-    contractor_id: query.contractor_id as string | undefined,
-    freelancer_id: query.freelancer_id as string | undefined,
-    project_id: query.project_id as string | undefined
+    escrowStatus: query.escrowStatus as string | undefined,
+    contractorId: query.contractorId as string | undefined,
+    freelancerId: query.freelancerId as string | undefined,
+    projectId: query.projectId as string | undefined
   }
 
   const result = await contractService.getAllContracts(filter)
@@ -105,7 +105,7 @@ const getMyContracts = expressAsyncHandler(async (req: RequestWithUser, res: Res
     page: query.page ? Number(query.page) : 1,
     limit: query.limit ? Number(query.limit) : 10,
     status: query.status as string | undefined,
-    escrow_status: query.escrow_status as string | undefined
+    escrowStatus: query.escrowStatus as string | undefined
   }
 
   const result = await contractService.getMyContracts(userId as string, filter)
@@ -133,22 +133,22 @@ const updateContract = expressAsyncHandler(async (req: RequestWithUser, res: Res
 
   const {
     description,
-    contractor_terms,
-    freelancer_terms,
-    total_amount,
-    admin_fee,
-    freelancer_deposit,
+    contractorTerms,
+    freelancerTerms,
+    totalAmount,
+    adminFee,
+    freelancerDeposit,
     deadline,
     status
   } = req.body
 
   const contract = await contractService.updateContract(id, userId as string, {
     description,
-    contractor_terms,
-    freelancer_terms,
-    total_amount,
-    admin_fee,
-    freelancer_deposit,
+    contractorTerms,
+    freelancerTerms,
+    totalAmount,
+    adminFee,
+    freelancerDeposit,
     deadline: deadline ? new Date(deadline) : undefined,
     status
   })
@@ -209,6 +209,7 @@ const payForContract = expressAsyncHandler(async (req: RequestWithUser, res: Res
 const submitContract = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const userId = req.user?._id
   const id = req.params.id as string
+  const { githubLink, webLink } = req.body
 
   if (!userId) {
     res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
@@ -220,7 +221,7 @@ const submitContract = expressAsyncHandler(async (req: RequestWithUser, res: Res
     return
   }
 
-  const contract = await contractService.submitContract(id, userId as string)
+  const contract = await contractService.submitContract(id, userId as string, { githubLink, webLink })
 
   res.status(HttpStatus.OK).json({
     message: 'Contract submitted successfully',

@@ -3,11 +3,11 @@ import mongoose, { Document } from 'mongoose'
 
 const withdrawRequestSchema = new mongoose.Schema(
   {
-    account_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true },
+    accountId: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true },
     amount: { type: Number, required: true, min: 0 },
     status: { type: String, enum: EWithdrawStatus, default: 'pending' },
-    admin_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    processed_at: { type: Date, default: null }
+    adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    processedAt: { type: Date, default: null }
   },
   {
     versionKey: false,
@@ -16,15 +16,15 @@ const withdrawRequestSchema = new mongoose.Schema(
   }
 )
 
-withdrawRequestSchema.index({ account_id: 1, status: 1 })
+withdrawRequestSchema.index({ accountId: 1, status: 1 })
 
 export const WithdrawRequest = mongoose.model('WithdrawRequest', withdrawRequestSchema)
 
 export interface IWithdrawRequest extends Document {
-  account_id: mongoose.Types.ObjectId
+  accountId: mongoose.Types.ObjectId
   amount: number
   status: EWithdrawStatus
-  admin_id?: mongoose.Types.ObjectId
+  adminId?: mongoose.Types.ObjectId
   createdAt: Date
-  processed_at?: Date
+  processedAt?: Date
 }

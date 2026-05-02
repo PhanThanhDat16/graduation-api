@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 
 const notificationSchema = new mongoose.Schema<INotification>(
   {
-    user_id: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
@@ -21,7 +21,7 @@ const notificationSchema = new mongoose.Schema<INotification>(
       type: String,
       required: true
     },
-    is_read: {
+    isRead: {
       type: Boolean,
       default: false
     }
@@ -32,14 +32,14 @@ const notificationSchema = new mongoose.Schema<INotification>(
   }
 )
 
-notificationSchema.index({ user_id: 1, is_read: 1 })
+notificationSchema.index({ userId: 1, isRead: 1 })
 
 export const Notification = mongoose.model<INotification>('Notification', notificationSchema)
 
 export interface INotification {
-  user_id: mongoose.Schema.Types.ObjectId
+  userId: mongoose.Schema.Types.ObjectId
   type: ENotificationType
   title: string
   content: string
-  is_read: boolean
+  isRead: boolean
 }
