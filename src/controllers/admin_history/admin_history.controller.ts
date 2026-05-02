@@ -6,13 +6,13 @@ import { adminHistoryService } from '@/services/admin_history/admin_history.serv
 import { RequestWithUser } from '@/middlewares/auth.middlewares'
 
 const createAdminHistory = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const { contract_id, dispute_id, user_id, action, note } = req.body
-  const admin_id = req.user?._id
+  const { contractId, disputeId, userId, action, note } = req.body
+  const adminId = req.user?._id
   const role = req.user?.role
 
-  if (!admin_id || !action || !note || !role) {
+  if (!adminId || !action || !note || !role) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'admin_id, action and note are required'
+      message: 'adminId, action and note are required'
     })
     return
   }
@@ -25,10 +25,10 @@ const createAdminHistory = expressAsyncHandler(async (req: RequestWithUser, res:
   }
 
   const history = await adminHistoryService.createAdminHistory({
-    admin_id,
-    contract_id,
-    dispute_id,
-    user_id,
+    adminId,
+    contractId,
+    disputeId,
+    userId,
     action,
     note
   })
@@ -54,10 +54,10 @@ const getAllAdminHistories = expressAsyncHandler(async (req: Request, res: Respo
     limit: query.limit ? Number(query.limit) : 10,
     sortBy: query.sortBy,
     sortOrder: query.sortOrder,
-    admin_id: query.admin_id,
-    contract_id: query.contract_id,
-    dispute_id: query.dispute_id,
-    user_id: query.user_id,
+    adminId: query.adminId,
+    contractId: query.contractId,
+    disputeId: query.disputeId,
+    userId: query.userId,
     action: query.action
   }
 

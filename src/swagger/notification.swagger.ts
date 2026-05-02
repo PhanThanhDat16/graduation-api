@@ -11,9 +11,9 @@
  *   schemas:
  *     CreateNotificationRequest:
  *       type: object
- *       required: [user_id, type, title, content]
+ *       required: [userId, type, title, content]
  *       properties:
- *         user_id:
+ *         userId:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734acfd"
  *         type:
@@ -59,7 +59,7 @@
  *         _id:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734ad01"
- *         user_id:
+ *         userId:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734acfd"
  *         type:
@@ -71,13 +71,13 @@
  *         content:
  *           type: string
  *           example: "A new contract has been created for your project."
- *         is_read:
+ *         isRead:
  *           type: boolean
  *           example: false
  *         createdAt:
  *           type: string
  *           format: date-time
- *         updated_at:
+ *         updatedAt:
  *           type: string
  *           format: date-time
  *
@@ -87,7 +87,7 @@
  *         _id:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734ad01"
- *         user_id:
+ *         userId:
  *           type: object
  *           properties:
  *             _id:
@@ -111,13 +111,13 @@
  *         content:
  *           type: string
  *           example: "A new contract has been created for your project."
- *         is_read:
+ *         isRead:
  *           type: boolean
  *           example: false
  *         createdAt:
  *           type: string
  *           format: date-time
- *         updated_at:
+ *         updatedAt:
  *           type: string
  *           format: date-time
  *
@@ -248,7 +248,7 @@
  *           type: string
  *         description: Filter by notification type
  *       - in: query
- *         name: is_read
+ *         name: isRead
  *         schema:
  *           type: boolean
  *         description: Filter by read status (true/false)
@@ -435,7 +435,7 @@
  *           enum: [asc, desc]
  *         description: Sort order
  *       - in: query
- *         name: user_id
+ *         name: userId
  *         schema:
  *           type: string
  *         description: Filter by user ID
@@ -445,7 +445,7 @@
  *           type: string
  *         description: Filter by notification type
  *       - in: query
- *         name: is_read
+ *         name: isRead
  *         schema:
  *           type: boolean
  *         description: Filter by read status

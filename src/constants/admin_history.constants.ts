@@ -24,18 +24,18 @@ export enum EAdminAction {
 }
 
 export interface AdminHistoryFilter {
-  admin_id?: string;
-  contract_id?: string;
-  dispute_id?: string;
-  user_id?: string;
+  adminId?: string;
+  contractId?: string;
+  disputeId?: string;
+  userId?: string;
   action?: string;
 }
 
 export interface ICreateAdminHistory {
-  admin_id: string;
-  contract_id?: string;
-  dispute_id?: string;
-  user_id?: string;
+  adminId: string;
+  contractId?: string;
+  disputeId?: string;
+  userId?: string;
   action: string;
   note: string;
 }

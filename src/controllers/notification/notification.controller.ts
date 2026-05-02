@@ -7,7 +7,7 @@ import { RequestWithUser } from '@/middlewares/auth.middlewares'
 import { EStatusRoleUser } from '@/constants/user.constants'
 
 const createNotification = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const { user_id, type, title, content } = req.body
+  const { userId, type, title, content } = req.body
   const role = req.user?.role
 
   if (role !== EStatusRoleUser.ADMIN && role !== EStatusRoleUser.STAFF) {
@@ -17,15 +17,15 @@ const createNotification = expressAsyncHandler(async (req: RequestWithUser, res:
     return
   }
 
-  if (!user_id || !type || !title || !content) {
+  if (!userId || !type || !title || !content) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'user_id, type, title and content are required'
+      message: 'userId, type, title and content are required'
     })
     return
   }
 
   const notification = await notificationService.createNotification({
-    user_id,
+    userId,
     type,
     title,
     content
@@ -86,9 +86,9 @@ const getAllNotifications = expressAsyncHandler(async (req: RequestWithUser, res
     limit: query.limit ? Number(query.limit) : 10,
     sortBy: query.sortBy,
     sortOrder: query.sortOrder,
-    user_id: query.user_id,
+    userId: query.userId,
     type: query.type,
-    is_read: query.is_read !== undefined ? query.is_read === 'true' : undefined
+    isRead: query.isRead !== undefined ? query.isRead === 'true' : undefined
   }
 
   const result = await notificationService.getAllNotifications(filter)
@@ -136,7 +136,7 @@ const getMyNotifications = expressAsyncHandler(async (req: RequestWithUser, res:
     sortBy: query.sortBy || 'createdAt',
     sortOrder: query.sortOrder || 'desc',
     type: query.type,
-    is_read: query.is_read !== undefined ? query.is_read === 'true' : undefined
+    isRead: query.isRead !== undefined ? query.isRead === 'true' : undefined
   }
 
   const result = await notificationService.getNotificationsByUserId(userId as string, filter)
@@ -148,7 +148,7 @@ const getMyNotifications = expressAsyncHandler(async (req: RequestWithUser, res:
 })
 
 const getNotificationsByUserId = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const userId = req.params.user_id
+  const userId = req.params.userId
   const role = req.user?.role
 
   if (role !== EStatusRoleUser.ADMIN && role !== EStatusRoleUser.STAFF) {
@@ -172,7 +172,7 @@ const getNotificationsByUserId = expressAsyncHandler(async (req: RequestWithUser
     sortBy: query.sortBy || 'createdAt',
     sortOrder: query.sortOrder || 'desc',
     type: query.type,
-    is_read: query.is_read !== undefined ? query.is_read === 'true' : undefined
+    isRead: query.isRead !== undefined ? query.isRead === 'true' : undefined
   }
 
   const result = await notificationService.getNotificationsByUserId(userId as string, filter)

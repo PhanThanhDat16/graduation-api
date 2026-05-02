@@ -50,8 +50,8 @@ const createDispute = async (data: ICreateDispute) => {
   const contract = await Contract.findById(data.contractId)
   if (!contract) throw new Error('Contract not found')
 
-  const isContractor = contract.contractor_id.toString() === data.openedBy
-  const isFreelancer = contract.freelancer_id.toString() === data.openedBy
+  const isContractor = contract.contractorId.toString() === data.openedBy
+  const isFreelancer = contract.freelancerId.toString() === data.openedBy
 
   if (!isContractor && !isFreelancer) {
     throw new Error('You are not authorized to open dispute for this contract')
@@ -83,8 +83,8 @@ const createDispute = async (data: ICreateDispute) => {
   // Tạo dispute — status = PENDING_REASONS, countdown 1h
   const disputeData: any = {
     contractId: new mongoose.Types.ObjectId(data.contractId),
-    contractorId: contract.contractor_id,
-    freelancerId: contract.freelancer_id,
+    contractorId: contract.contractorId,
+    freelancerId: contract.freelancerId,
     openedBy: new mongoose.Types.ObjectId(data.openedBy),
     status: EDisputeStatus.PENDING_REASONS,
     reasonDeadline: new Date(Date.now() + 60 * 60 * 1000) // 1 giờ
@@ -231,8 +231,8 @@ const escalateDispute = async (disputeId: string, userId: string) => {
   // Cập nhật contract status sang DISPUTE
   await Contract.findByIdAndUpdate(dispute.contractId, {
     status: EContractStatus.DISPUTE,
-    escrow_status: EEscrowStatus.LOCKED,
-    last_updated_at: new Date()
+    escrowStatus: EEscrowStatus.LOCKED,
+    lastUpdatedAt: new Date()
   })
 
   return updatedDispute
@@ -340,8 +340,8 @@ const staffCancelDispute = async (disputeId: string, staffId: string, cancelReas
   if (contract) {
     await Contract.findByIdAndUpdate(dispute.contractId, {
       status: EContractStatus.RUNNING,
-      escrow_status: EEscrowStatus.FUNDED,
-      last_updated_at: new Date()
+      escrowStatus: EEscrowStatus.FUNDED,
+      lastUpdatedAt: new Date()
     })
   }
 
@@ -375,7 +375,7 @@ const proposeResolution = async (disputeId: string, userId: string, data: IPropo
 
   // Validate amounts for CANCEL and SPLIT
   if (data.resolutionType === EResolutionType.CANCEL || data.resolutionType === EResolutionType.SPLIT) {
-    const totalEscrow = contract.total_escrow_amount
+    const totalEscrow = contract.totalEscrowAmount
     const proposedTotal = (data.freelancerAmount || 0) + (data.contractorAmount || 0)
 
     if (proposedTotal !== totalEscrow) {
@@ -499,11 +499,11 @@ const executeResolution = async (dispute: any) => {
       // Trường hợp 1: Tiếp tục dự án — cập nhật expand_deadline + expand_count
       await Contract.findByIdAndUpdate(dispute.contractId, {
         status: EContractStatus.RUNNING,
-        escrow_status: EEscrowStatus.FUNDED,
+        escrowStatus: EEscrowStatus.FUNDED,
         deadline: dispute.newDeadline,
-        expand_deadline: dispute.newDeadline,
-        expand_count: contract.expand_count + 1,
-        last_updated_at: new Date()
+        expandDeadline: dispute.newDeadline,
+        expandCount: contract.expandCount + 1,
+        lastUpdatedAt: new Date()
       })
       break
 
@@ -517,8 +517,8 @@ const executeResolution = async (dispute: any) => {
           dispute.freelancerAmount,
           dispute.contractorId.toString(),
           {
-            contract_id: contractId,
-            payer_type: EPayerType.FREELANCER,
+            contractId: contractId,
+            payerType: EPayerType.FREELANCER,
             description: `Dispute resolved - ${dispute.resolutionType}`
           }
         )
@@ -531,8 +531,8 @@ const executeResolution = async (dispute: any) => {
           dispute.contractorAmount,
           dispute.freelancerId.toString(),
           {
-            contract_id: contractId,
-            payer_type: EPayerType.CONTRACTOR,
+            contractId: contractId,
+            payerType: EPayerType.CONTRACTOR,
             description: `Dispute resolved - ${dispute.resolutionType}`
           }
         )
@@ -540,11 +540,11 @@ const executeResolution = async (dispute: any) => {
 
       await Contract.findByIdAndUpdate(dispute.contractId, {
         status: dispute.resolutionType === EResolutionType.SPLIT ? EContractStatus.COMPLETED : EContractStatus.CANCELLED,
-        escrow_status: dispute.resolutionType === EResolutionType.SPLIT ? EEscrowStatus.SPLIT : EEscrowStatus.REFUNDED,
-        released_to_freelancer: dispute.freelancerAmount,
-        refunded_to_contractor: dispute.contractorAmount,
-        end_at: new Date(),
-        last_updated_at: new Date()
+        escrowStatus: dispute.resolutionType === EResolutionType.SPLIT ? EEscrowStatus.SPLIT : EEscrowStatus.REFUNDED,
+        releasedToFreelancer: dispute.freelancerAmount,
+        refundedToContractor: dispute.contractorAmount,
+        endAt: new Date(),
+        lastUpdatedAt: new Date()
       })
       break
   }
@@ -576,7 +576,7 @@ const staffResolveDispute = async (
 
   // Validate amounts
   if (data.resolutionType === EResolutionType.CANCEL || data.resolutionType === EResolutionType.SPLIT) {
-    const totalEscrow = contract.total_escrow_amount
+    const totalEscrow = contract.totalEscrowAmount
     const proposedTotal = (data.freelancerAmount || 0) + (data.contractorAmount || 0)
 
     if (proposedTotal !== totalEscrow) {

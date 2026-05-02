@@ -14,7 +14,7 @@
  *       properties:
  *         _id:
  *           type: string
- *         full_name:
+ *         fullName:
  *           type: string
  *         avatar:
  *           type: string
@@ -22,9 +22,9 @@
  *     ConversationResponse:
  *       type: object
  *       properties:
- *         group_id:
+ *         groupId:
  *           type: string
- *         user_id:
+ *         userId:
  *           type: string
  *           nullable: true
  *         guestName:

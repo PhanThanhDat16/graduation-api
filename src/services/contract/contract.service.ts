@@ -13,62 +13,62 @@ import { walletService } from '@/services/wallet/wallet.service'
 import { EPayerType } from '@/constants/wallet.constants'
 
 const CONTRACT_FIELDS = `
-  _id project_id application_id contractor_id freelancer_id
-  description contractor_terms freelancer_terms
-  total_amount admin_fee freelancer_deposit
-  contractor_agreed freelancer_agreed deadline
-  contractor_paid freelancer_paid
-  contractor_paid_amount freelancer_paid_amount
-  deadline_paid contractor_paid_at freelancer_paid_at
-  admin_id admin_approved_at admin_rejection_reason
-  start_at end_at expand_count expand_deadline
-  status total_escrow_amount
-  released_to_freelancer refunded_to_contractor refunded_to_freelancer admin_fee_collected
-  escrow_status last_updated_at createdAt updatedAt
+  _id projectId applicationId contractorId freelancerId
+  description contractorTerms freelancerTerms
+  totalAmount adminFee freelancerDeposit
+  contractorAgreed freelancerAgreed deadline
+  contractorPaid freelancerPaid
+  contractorPaidAmount freelancerPaidAmount
+  deadlinePaid contractorPaidAt freelancerPaidAt
+  adminId adminApprovedAt adminRejectionReason
+  startAt endAt expandCount expandDeadline
+  status totalEscrowAmount
+  releasedToFreelancer refundedToContractor refundedToFreelancer adminFeeCollected
+  escrowStatus lastUpdatedAt createdAt updatedAt
 `
 
 /**
  * Tính số tiền mỗi bên cần đóng
- * - Contractor: total_amount + admin_fee
- * - Freelancer: freelancer_deposit (có thể = 0)
+ * - Contractor: totalAmount + adminFee
+ * - Freelancer: freelancerDeposit (có thể = 0)
  */
 const calculatePaymentAmounts = (contract: any) => {
   return {
-    contractorAmount: contract.total_amount + contract.admin_fee,
-    freelancerAmount: contract.freelancer_deposit || 0
+    contractorAmount: contract.totalAmount + contract.adminFee,
+    freelancerAmount: contract.freelancerDeposit || 0
   }
 }
 
 // Create contract
 const createContract = async (data: ICreateContract) => {
-  if (!mongoose.Types.ObjectId.isValid(data.project_id)) {
+  if (!mongoose.Types.ObjectId.isValid(data.projectId)) {
     throw new Error('Invalid project ID format')
   }
-  if (!mongoose.Types.ObjectId.isValid(data.contractor_id)) {
+  if (!mongoose.Types.ObjectId.isValid(data.contractorId)) {
     throw new Error('Invalid contractor ID format')
   }
-  if (!mongoose.Types.ObjectId.isValid(data.freelancer_id)) {
+  if (!mongoose.Types.ObjectId.isValid(data.freelancerId)) {
     throw new Error('Invalid freelancer ID format')
   }
 
-  if (data.contractor_id === data.freelancer_id) {
+  if (data.contractorId === data.freelancerId) {
     throw new Error('Contractor and freelancer cannot be the same person')
   }
 
   const contract = await Contract.create({
-    project_id: new mongoose.Types.ObjectId(data.project_id),
-    application_id: data.application_id ? new mongoose.Types.ObjectId(data.application_id) : undefined,
-    contractor_id: new mongoose.Types.ObjectId(data.contractor_id),
-    freelancer_id: new mongoose.Types.ObjectId(data.freelancer_id),
+    projectId: new mongoose.Types.ObjectId(data.projectId),
+    applicationId: data.applicationId ? new mongoose.Types.ObjectId(data.applicationId) : undefined,
+    contractorId: new mongoose.Types.ObjectId(data.contractorId),
+    freelancerId: new mongoose.Types.ObjectId(data.freelancerId),
     description: data.description,
-    contractor_terms: data.contractor_terms,
-    freelancer_terms: data.freelancer_terms,
-    total_amount: data.total_amount,
-    admin_fee: data.admin_fee || 0,
-    freelancer_deposit: data.freelancer_deposit || 0,
+    contractorTerms: data.contractorTerms,
+    freelancerTerms: data.freelancerTerms,
+    totalAmount: data.totalAmount,
+    adminFee: data.adminFee || 0,
+    freelancerDeposit: data.freelancerDeposit || 0,
     deadline: data.deadline,
     status: EContractStatus.DRAFT,
-    escrow_status: EEscrowStatus.PENDING
+    escrowStatus: EEscrowStatus.PENDING
   })
 
   return contract
@@ -81,10 +81,10 @@ const getContractById = async (contractId: string) => {
   }
 
   const contract = await Contract.findById(contractId)
-    .populate('project_id', '_id title description')
-    .populate('contractor_id', '_id fullName email avatar')
-    .populate('freelancer_id', '_id fullName email avatar')
-    .populate('admin_id', '_id fullName email')
+    .populate('projectId', '_id title description')
+    .populate('contractorId', '_id fullName email avatar')
+    .populate('freelancerId', '_id fullName email avatar')
+    .populate('adminId', '_id fullName email')
     .lean()
 
   if (!contract) {
@@ -96,11 +96,11 @@ const getContractById = async (contractId: string) => {
 
   return {
     ...contract,
-    payment_info: {
-      contractor_must_pay: paymentInfo.contractorAmount,
-      freelancer_must_pay: paymentInfo.freelancerAmount,
-      contractor_remaining: paymentInfo.contractorAmount - (contract.contractor_paid_amount || 0),
-      freelancer_remaining: paymentInfo.freelancerAmount - (contract.freelancer_paid_amount || 0)
+    paymentInfo: {
+      contractorMustPay: paymentInfo.contractorAmount,
+      freelancerMustPay: paymentInfo.freelancerAmount,
+      contractorRemaining: paymentInfo.contractorAmount - (contract.contractorPaidAmount || 0),
+      freelancerRemaining: paymentInfo.freelancerAmount - (contract.freelancerPaidAmount || 0)
     }
   }
 }
@@ -110,15 +110,15 @@ const getAllContracts = async (query: PaginationQuery & ContractFilter) => {
   const filter: any = {}
 
   if (query.status) filter.status = query.status
-  if (query.escrow_status) filter.escrow_status = query.escrow_status
-  if (query.contractor_id) filter.contractor_id = new mongoose.Types.ObjectId(query.contractor_id)
-  if (query.freelancer_id) filter.freelancer_id = new mongoose.Types.ObjectId(query.freelancer_id)
-  if (query.project_id) filter.project_id = new mongoose.Types.ObjectId(query.project_id)
+  if (query.escrowStatus) filter.escrowStatus = query.escrowStatus
+  if (query.contractorId) filter.contractorId = new mongoose.Types.ObjectId(query.contractorId)
+  if (query.freelancerId) filter.freelancerId = new mongoose.Types.ObjectId(query.freelancerId)
+  if (query.projectId) filter.projectId = new mongoose.Types.ObjectId(query.projectId)
 
   return await paginate(Contract, filter, query, CONTRACT_FIELDS, [
-    { path: 'project_id', select: '_id title description' },
-    { path: 'contractor_id', select: '_id fullName email avatar' },
-    { path: 'freelancer_id', select: '_id fullName email avatar' }
+    { path: 'projectId', select: '_id title description' },
+    { path: 'contractorId', select: '_id fullName email avatar' },
+    { path: 'freelancerId', select: '_id fullName email avatar' }
   ])
 }
 
@@ -130,18 +130,18 @@ const getMyContracts = async (userId: string, query: PaginationQuery & ContractF
 
   const filter: any = {
     $or: [
-      { contractor_id: new mongoose.Types.ObjectId(userId) },
-      { freelancer_id: new mongoose.Types.ObjectId(userId) }
+      { contractorId: new mongoose.Types.ObjectId(userId) },
+      { freelancerId: new mongoose.Types.ObjectId(userId) }
     ]
   }
 
   if (query.status) filter.status = query.status
-  if (query.escrow_status) filter.escrow_status = query.escrow_status
+  if (query.escrowStatus) filter.escrowStatus = query.escrowStatus
 
   return await paginate(Contract, filter, query, CONTRACT_FIELDS, [
-    { path: 'project_id', select: '_id title description' },
-    { path: 'contractor_id', select: '_id fullName email avatar' },
-    { path: 'freelancer_id', select: '_id fullName email avatar' }
+    { path: 'projectId', select: '_id title description' },
+    { path: 'contractorId', select: '_id fullName email avatar' },
+    { path: 'freelancerId', select: '_id fullName email avatar' }
   ])
 }
 
@@ -154,8 +154,8 @@ const updateContract = async (contractId: string, userId: string, data: IUpdateC
   const contract = await Contract.findById(contractId)
   if (!contract) throw new Error('Contract not found')
 
-  const isContractor = contract.contractor_id.toString() === userId
-  const isFreelancer = contract.freelancer_id.toString() === userId
+  const isContractor = contract.contractorId.toString() === userId
+  const isFreelancer = contract.freelancerId.toString() === userId
 
   if (!isContractor && !isFreelancer) {
     throw new Error('You are not authorized to update this contract')
@@ -165,30 +165,30 @@ const updateContract = async (contractId: string, userId: string, data: IUpdateC
     throw new Error('Contract cannot be updated in current status')
   }
 
-  const updateData: any = { last_updated_at: new Date() }
+  const updateData: any = { lastUpdatedAt: new Date() }
 
   if (data.status !== undefined) updateData.status = data.status
 
   // Contractor có thể update các field này
   if (isContractor) {
     if (data.description !== undefined) updateData.description = data.description
-    if (data.total_amount !== undefined) updateData.total_amount = data.total_amount
-    if (data.admin_fee !== undefined) updateData.admin_fee = data.admin_fee
-    if (data.freelancer_deposit !== undefined) updateData.freelancer_deposit = data.freelancer_deposit
+    if (data.totalAmount !== undefined) updateData.totalAmount = data.totalAmount
+    if (data.adminFee !== undefined) updateData.adminFee = data.adminFee
+    if (data.freelancerDeposit !== undefined) updateData.freelancerDeposit = data.freelancerDeposit
     if (data.deadline !== undefined) updateData.deadline = data.deadline
-    if (data.contractor_terms !== undefined) {
-      updateData.contractor_terms = data.contractor_terms
+    if (data.contractorTerms !== undefined) {
+      updateData.contractorTerms = data.contractorTerms
       // Reset agreement khi terms thay đổi
-      updateData.contractor_agreed = false
-      updateData.freelancer_agreed = false
+      updateData.contractorAgreed = false
+      updateData.freelancerAgreed = false
     }
   }
 
   // Freelancer chỉ có thể update freelancer_terms
-  if (isFreelancer && data.freelancer_terms !== undefined) {
-    updateData.freelancer_terms = data.freelancer_terms
-    updateData.contractor_agreed = false
-    updateData.freelancer_agreed = false
+  if (isFreelancer && data.freelancerTerms !== undefined) {
+    updateData.freelancerTerms = data.freelancerTerms
+    updateData.contractorAgreed = false
+    updateData.freelancerAgreed = false
   }
 
   const updatedContract = await Contract.findByIdAndUpdate(contractId, updateData, { new: true }).lean()
@@ -204,8 +204,8 @@ const agreeToContract = async (contractId: string, userId: string) => {
   const contract = await Contract.findById(contractId)
   if (!contract) throw new Error('Contract not found')
 
-  const isContractor = contract.contractor_id.toString() === userId
-  const isFreelancer = contract.freelancer_id.toString() === userId
+  const isContractor = contract.contractorId.toString() === userId
+  const isFreelancer = contract.freelancerId.toString() === userId
 
   if (!isContractor && !isFreelancer) {
     throw new Error('You are not authorized to agree to this contract')
@@ -215,17 +215,17 @@ const agreeToContract = async (contractId: string, userId: string) => {
     throw new Error('Contract cannot be agreed in current status')
   }
 
-  const updateData: any = { last_updated_at: new Date() }
+  const updateData: any = { lastUpdatedAt: new Date() }
 
-  if (isContractor) updateData.contractor_agreed = true
-  if (isFreelancer) updateData.freelancer_agreed = true
+  if (isContractor) updateData.contractorAgreed = true
+  if (isFreelancer) updateData.freelancerAgreed = true
 
   // Check if both agreed
-  const bothAgreed = (isContractor && contract.freelancer_agreed) || (isFreelancer && contract.contractor_agreed)
+  const bothAgreed = (isContractor && contract.freelancerAgreed) || (isFreelancer && contract.contractorAgreed)
 
   if (bothAgreed) {
     updateData.status = EContractStatus.WAITING_PAYMENT
-    updateData.deadline_paid = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
+    updateData.deadlinePaid = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
   } else {
     updateData.status = EContractStatus.PENDING_AGREEMENT
   }
@@ -243,8 +243,8 @@ const payForContract = async (contractId: string, userId: string) => {
   const contract = await Contract.findById(contractId)
   if (!contract) throw new Error('Contract not found')
 
-  const isContractor = contract.contractor_id.toString() === userId
-  const isFreelancer = contract.freelancer_id.toString() === userId
+  const isContractor = contract.contractorId.toString() === userId
+  const isFreelancer = contract.freelancerId.toString() === userId
 
   if (!isContractor && !isFreelancer) {
     throw new Error('You are not authorized to pay for this contract')
@@ -259,13 +259,13 @@ const payForContract = async (contractId: string, userId: string) => {
   let payerType: EPayerType
 
   if (isContractor) {
-    if (contract.contractor_paid) {
+    if (contract.contractorPaid) {
       throw new Error('You have already paid')
     }
     depositAmount = paymentAmounts.contractorAmount
     payerType = EPayerType.CONTRACTOR
   } else {
-    if (contract.freelancer_paid) {
+    if (contract.freelancerPaid) {
       throw new Error('You have already paid')
     }
     depositAmount = paymentAmounts.freelancerAmount
@@ -274,17 +274,17 @@ const payForContract = async (contractId: string, userId: string) => {
     // Nếu freelancer không cần đóng tiền
     if (depositAmount === 0) {
       const updateData: any = {
-        freelancer_paid: true,
-        freelancer_paid_at: new Date(),
-        freelancer_paid_amount: 0,
-        last_updated_at: new Date()
+        freelancerPaid: true,
+        freelancerPaidAt: new Date(),
+        freelancerPaidAmount: 0,
+        lastUpdatedAt: new Date()
       }
 
       // Check if both paid
-      if (contract.contractor_paid) {
+      if (contract.contractorPaid) {
         updateData.status = EContractStatus.RUNNING
-        updateData.escrow_status = EEscrowStatus.FUNDED
-        updateData.start_at = new Date()
+        updateData.escrowStatus = EEscrowStatus.FUNDED
+        updateData.startAt = new Date()
       }
 
       return await Contract.findByIdAndUpdate(contractId, updateData, { new: true }).lean()
@@ -292,41 +292,41 @@ const payForContract = async (contractId: string, userId: string) => {
   }
 
   // Trừ tiền từ wallet (transaction is recorded automatically)
-  const otherUserId = isContractor ? contract.freelancer_id.toString() : contract.contractor_id.toString()
+  const otherUserId = isContractor ? contract.freelancerId.toString() : contract.contractorId.toString()
   await walletService.escrowDeposit(userId, depositAmount, otherUserId, {
-    contract_id: contractId,
-    payer_type: payerType,
+    contractId: contractId,
+    payerType: payerType,
     description: `Escrow deposit for contract`
   })
 
   // Update contract
   const updateData: any = {
-    last_updated_at: new Date(),
-    total_escrow_amount: contract.total_escrow_amount + depositAmount
+    lastUpdatedAt: new Date(),
+    totalEscrowAmount: contract.totalEscrowAmount + depositAmount
   }
 
   if (isContractor) {
-    updateData.contractor_paid = true
-    updateData.contractor_paid_at = new Date()
-    updateData.contractor_paid_amount = depositAmount
+    updateData.contractorPaid = true
+    updateData.contractorPaidAt = new Date()
+    updateData.contractorPaidAmount = depositAmount
   } else {
-    updateData.freelancer_paid = true
-    updateData.freelancer_paid_at = new Date()
-    updateData.freelancer_paid_amount = depositAmount
+    updateData.freelancerPaid = true
+    updateData.freelancerPaidAt = new Date()
+    updateData.freelancerPaidAmount = depositAmount
   }
 
   // Check if both paid (hoặc freelancer không cần pay)
   const freelancerNeedsPay = paymentAmounts.freelancerAmount > 0
   const bothPaid = isContractor
-    ? (!freelancerNeedsPay || contract.freelancer_paid)
-    : contract.contractor_paid
+    ? (!freelancerNeedsPay || contract.freelancerPaid)
+    : contract.contractorPaid
 
   if (bothPaid) {
     updateData.status = EContractStatus.RUNNING
-    updateData.escrow_status = EEscrowStatus.FUNDED
-    updateData.start_at = new Date()
+    updateData.escrowStatus = EEscrowStatus.FUNDED
+    updateData.startAt = new Date()
   } else {
-    updateData.escrow_status = EEscrowStatus.PARTIAL
+    updateData.escrowStatus = EEscrowStatus.PARTIAL
   }
 
   const updatedContract = await Contract.findByIdAndUpdate(contractId, updateData, { new: true }).lean()
@@ -334,7 +334,7 @@ const payForContract = async (contractId: string, userId: string) => {
 }
 
 // Submit contract (freelancer hoàn thành công việc)
-const submitContract = async (contractId: string, freelancerId: string) => {
+const submitContract = async (contractId: string, freelancerId: string, submitData?: { githubLink?: string; webLink?: string }) => {
   if (!mongoose.Types.ObjectId.isValid(contractId)) {
     throw new Error('Invalid contract ID format')
   }
@@ -342,7 +342,7 @@ const submitContract = async (contractId: string, freelancerId: string) => {
   const contract = await Contract.findById(contractId)
   if (!contract) throw new Error('Contract not found')
 
-  if (contract.freelancer_id.toString() !== freelancerId) {
+  if (contract.freelancerId.toString() !== freelancerId) {
     throw new Error('Only freelancer can submit the contract')
   }
 
@@ -350,9 +350,23 @@ const submitContract = async (contractId: string, freelancerId: string) => {
     throw new Error('Contract is not in running status')
   }
 
+  const updateData: any = {
+    status: EContractStatus.SUBMITTED,
+    lastUpdatedAt: new Date(),
+    submittedAt: new Date()
+  }
+
+  if (submitData?.githubLink) {
+    updateData.githubLink = submitData.githubLink
+  }
+
+  if (submitData?.webLink) {
+    updateData.webLink = submitData.webLink
+  }
+
   const updatedContract = await Contract.findByIdAndUpdate(
     contractId,
-    { status: EContractStatus.SUBMITTED, last_updated_at: new Date() },
+    updateData,
     { new: true }
   ).lean()
 
@@ -368,7 +382,7 @@ const completeContract = async (contractId: string, contractorId: string) => {
   const contract = await Contract.findById(contractId)
   if (!contract) throw new Error('Contract not found')
 
-  if (contract.contractor_id.toString() !== contractorId) {
+  if (contract.contractorId.toString() !== contractorId) {
     throw new Error('Only contractor can complete the contract')
   }
 
@@ -376,47 +390,47 @@ const completeContract = async (contractId: string, contractorId: string) => {
     throw new Error('Contract is not in submitted status')
   }
 
-  // 1. Release total_amount cho freelancer
-  const releaseAmount = contract.total_amount
+  // 1. Release totalAmount cho freelancer
+  const releaseAmount = contract.totalAmount
   await walletService.escrowRelease(
-    contract.freelancer_id.toString(),
+    contract.freelancerId.toString(),
     releaseAmount,
-    contract.contractor_id.toString(),
+    contract.contractorId.toString(),
     {
-      contract_id: contractId,
-      payer_type: EPayerType.FREELANCER,
+      contractId: contractId,
+      payerType: EPayerType.FREELANCER,
       description: 'Contract completed - payment release'
     }
   )
 
-  // 2. Hoàn lại freelancer_deposit nếu có
-  const freelancerDepositRefund = contract.freelancer_paid_amount || 0
+  // 2. Hoàn lại freelancerDeposit nếu có
+  const freelancerDepositRefund = contract.freelancerPaidAmount || 0
   if (freelancerDepositRefund > 0) {
     await walletService.refund(
-      contract.freelancer_id.toString(),
+      contract.freelancerId.toString(),
       freelancerDepositRefund,
-      contract.contractor_id.toString(),
+      contract.contractorId.toString(),
       {
-        contract_id: contractId,
-        payer_type: EPayerType.FREELANCER,
+        contractId: contractId,
+        payerType: EPayerType.FREELANCER,
         description: 'Contract completed - deposit refund'
       }
     )
   }
 
   // 3. Admin fee (tạm thời chỉ track, không chuyển đi đâu)
-  const adminFeeAmount = contract.admin_fee
+  const adminFeeAmount = contract.adminFee
 
   const updatedContract = await Contract.findByIdAndUpdate(
     contractId,
     {
       status: EContractStatus.COMPLETED,
-      escrow_status: EEscrowStatus.RELEASED,
-      released_to_freelancer: releaseAmount,
-      refunded_to_freelancer: freelancerDepositRefund,
-      admin_fee_collected: adminFeeAmount,
-      end_at: new Date(),
-      last_updated_at: new Date()
+      escrowStatus: EEscrowStatus.RELEASED,
+      releasedToFreelancer: releaseAmount,
+      refundedToFreelancer: freelancerDepositRefund,
+      adminFeeCollected: adminFeeAmount,
+      endAt: new Date(),
+      lastUpdatedAt: new Date()
     },
     { new: true }
   ).lean()
@@ -433,8 +447,8 @@ const cancelContract = async (contractId: string, userId: string) => {
   const contract = await Contract.findById(contractId)
   if (!contract) throw new Error('Contract not found')
 
-  const isContractor = contract.contractor_id.toString() === userId
-  const isFreelancer = contract.freelancer_id.toString() === userId
+  const isContractor = contract.contractorId.toString() === userId
+  const isFreelancer = contract.freelancerId.toString() === userId
 
   if (!isContractor && !isFreelancer) {
     throw new Error('You are not authorized to cancel this contract')
@@ -447,27 +461,27 @@ const cancelContract = async (contractId: string, userId: string) => {
   }
 
   // Refund nếu đã có ai đó pay
-  if (contract.contractor_paid && contract.contractor_paid_amount > 0) {
+  if (contract.contractorPaid && contract.contractorPaidAmount > 0) {
     await walletService.refund(
-      contract.contractor_id.toString(),
-      contract.contractor_paid_amount,
-      contract.freelancer_id.toString(),
+      contract.contractorId.toString(),
+      contract.contractorPaidAmount,
+      contract.freelancerId.toString(),
       {
-        contract_id: contractId,
-        payer_type: EPayerType.CONTRACTOR,
+        contractId: contractId,
+        payerType: EPayerType.CONTRACTOR,
         description: 'Contract cancelled - refund'
       }
     )
   }
 
-  if (contract.freelancer_paid && contract.freelancer_paid_amount > 0) {
+  if (contract.freelancerPaid && contract.freelancerPaidAmount > 0) {
     await walletService.refund(
-      contract.freelancer_id.toString(),
-      contract.freelancer_paid_amount,
-      contract.contractor_id.toString(),
+      contract.freelancerId.toString(),
+      contract.freelancerPaidAmount,
+      contract.contractorId.toString(),
       {
-        contract_id: contractId,
-        payer_type: EPayerType.FREELANCER,
+        contractId: contractId,
+        payerType: EPayerType.FREELANCER,
         description: 'Contract cancelled - refund'
       }
     )
@@ -477,11 +491,11 @@ const cancelContract = async (contractId: string, userId: string) => {
     contractId,
     {
       status: EContractStatus.CANCELLED,
-      escrow_status: contract.total_escrow_amount > 0 ? EEscrowStatus.REFUNDED : EEscrowStatus.PENDING,
-      refunded_to_contractor: contract.contractor_paid_amount || 0,
-      refunded_to_freelancer: contract.freelancer_paid_amount || 0,
-      end_at: new Date(),
-      last_updated_at: new Date()
+      escrowStatus: contract.totalEscrowAmount > 0 ? EEscrowStatus.REFUNDED : EEscrowStatus.PENDING,
+      refundedToContractor: contract.contractorPaidAmount || 0,
+      refundedToFreelancer: contract.freelancerPaidAmount || 0,
+      endAt: new Date(),
+      lastUpdatedAt: new Date()
     },
     { new: true }
   ).lean()
@@ -498,8 +512,8 @@ const extendDeadline = async (contractId: string, userId: string, newDeadline: D
   const contract = await Contract.findById(contractId)
   if (!contract) throw new Error('Contract not found')
 
-  const isContractor = contract.contractor_id.toString() === userId
-  const isFreelancer = contract.freelancer_id.toString() === userId
+  const isContractor = contract.contractorId.toString() === userId
+  const isFreelancer = contract.freelancerId.toString() === userId
 
   if (!isContractor && !isFreelancer) {
     throw new Error('You are not authorized to extend this contract')
@@ -517,9 +531,9 @@ const extendDeadline = async (contractId: string, userId: string, newDeadline: D
     contractId,
     {
       deadline: newDeadline,
-      expand_deadline: newDeadline,
-      expand_count: contract.expand_count + 1,
-      last_updated_at: new Date()
+      expandDeadline: newDeadline,
+      expandCount: contract.expandCount + 1,
+      lastUpdatedAt: new Date()
     },
     { new: true }
   ).lean()

@@ -1,63 +1,45 @@
 import { AIJobData, AIFreelancerData } from '@/constants/ai.constants'
 import { Project } from '@/models/project.model'
 import { User } from '@/models/user.model'
-import { Application } from '@/models/application.model'
-import { Contract } from '@/models/contract.model'
 import mongoose from 'mongoose'
 
 /**
  * Transform a raw project document into the AI-expected job format.
+ * Returns raw fields without fabrication.
  */
-const transformProjectToAIJob = (project: any): AIJobData => {
-  return {
-    id: project._id.toString(),
-    title: project.title || '',
-    description: project.description || '',
-    skills_required: project.skills || [],
-    budget: Math.round(((project.budgetMin || 0) + (project.budgetMax || 0)) / 2),
-    category: project.category || '',
-    experience_level: 'Any',
-    duration: 'Flexible'
-  }
-}
+const transformProjectToAIJob = (project: any): AIJobData => ({
+  id: project._id.toString(),
+  title: project.title || '',
+  description: project.description || '',
+  category: project.category || '',
+  skills: project.skills || [],
+  budgetMin: project.budgetMin || 0,
+  budgetMax: project.budgetMax || 0,
+  status: project.status || '',
+  contractorId: project.contractorId?.toString() || '',
+  createdAt: project.createdAt?.toISOString() || ''
+})
 
 /**
  * Transform a raw user document into the AI-expected freelancer format.
- * Enriches with application history and completed contract count.
+ * Returns raw fields without fabrication.
  */
-const transformUserToAIFreelancer = async (user: any): Promise<AIFreelancerData> => {
-  const userId = user._id.toString()
-
-  // Get application history → list of projectIds the user applied to
-  const applications = await Application.find({ freelancerId: user._id }).select('projectId').lean()
-  const applyHistory = applications.map((app: any) => app.projectId.toString())
-
-  // Count completed contracts
-  const completedContracts = await Contract.countDocuments({
-    freelancer_id: user._id,
-    status: 'completed'
-  })
-
-  return {
-    id: userId,
-    name: user.fullName || '',
-    title: user.description || user.role || '',
-    bio: user.description || '',
-    skills: [],
-    rating: user.ratingAvg || 0,
-    hourly_rate: 0,
-    projects_completed: completedContracts,
-    apply_history: applyHistory,
-    certifications: []
-  }
-}
+const transformUserToAIFreelancer = (user: any): AIFreelancerData => ({
+  id: user._id.toString(),
+  fullName: user.fullName || '',
+  description: user.description || '',
+  role: user.role || '',
+  ratingAvg: user.ratingAvg ?? null,
+  ratingCount: user.ratingCount ?? null,
+  status: user.status || ''
+})
 
 /**
  * Get all open projects formatted for the AI service.
  */
 const getJobsForAI = async (): Promise<AIJobData[]> => {
   const projects = await Project.find({ status: 'open' })
-    .select('_id title description category skills budgetMin budgetMax status')
+    .select('_id title description category skills budgetMin budgetMax status contractorId createdAt')
     .lean()
 
   return projects.map(transformProjectToAIJob)
@@ -72,7 +54,7 @@ const getJobByIdForAI = async (projectId: string): Promise<AIJobData | null> => 
   }
 
   const project = await Project.findById(projectId)
-    .select('_id title description category skills budgetMin budgetMax status')
+    .select('_id title description category skills budgetMin budgetMax status contractorId createdAt')
     .lean()
 
   if (!project) {
@@ -90,11 +72,10 @@ const getFreelancersForAI = async (): Promise<AIFreelancerData[]> => {
     role: { $in: ['freelancer', 'contractor'] },
     status: 'active'
   })
-    .select('_id fullName description role ratingAvg ratingCount')
+    .select('_id fullName description role ratingAvg ratingCount status')
     .lean()
 
-  const results = await Promise.all(users.map(transformUserToAIFreelancer))
-  return results
+  return users.map(transformUserToAIFreelancer)
 }
 
 /**
@@ -110,7 +91,7 @@ const getFreelancerByIdForAI = async (userId: string): Promise<AIFreelancerData 
     role: { $in: ['freelancer', 'contractor'] },
     status: 'active'
   })
-    .select('_id fullName description role ratingAvg ratingCount')
+    .select('_id fullName description role ratingAvg ratingCount status')
     .lean()
 
   if (!user) {
