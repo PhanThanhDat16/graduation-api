@@ -31,10 +31,10 @@ export enum EResolutionType {
 
 export interface ContractFilter {
   status?: EContractStatus
-  escrow_status?: EEscrowStatus
-  contractor_id?: string
-  freelancer_id?: string
-  project_id?: string
+  escrowStatus?: EEscrowStatus
+  contractorId?: string
+  freelancerId?: string
+  projectId?: string
 }
 
 export interface DisputeFilter {
@@ -45,29 +45,29 @@ export interface DisputeFilter {
 }
 
 export interface ICreateContract {
-  project_id: string
-  application_id?: string
-  contractor_id: string
-  freelancer_id: string
+  projectId: string
+  applicationId?: string
+  contractorId: string
+  freelancerId: string
   description?: string
-  contractor_terms?: string
-  freelancer_terms?: string
-  total_amount: number
-  admin_fee?: number
-  freelancer_deposit?: number
+  contractorTerms?: string
+  freelancerTerms?: string
+  totalAmount: number
+  adminFee?: number
+  freelancerDeposit?: number
   deadline?: Date
 }
 
 export interface IUpdateContract {
   description?: string
-  contractor_terms?: string
-  freelancer_terms?: string
-  total_amount?: number
-  admin_fee?: number
-  freelancer_deposit?: number
+  contractorTerms?: string
+  freelancerTerms?: string
+  totalAmount?: number
+  adminFee?: number
+  freelancerDeposit?: number
   deadline?: Date
-  contractor_agreed?: boolean
-  freelancer_agreed?: boolean
+  contractorAgreed?: boolean
+  freelancerAgreed?: boolean
   status?: EContractStatus
 }
 
@@ -82,5 +82,10 @@ export interface IProposeResolution {
   freelancerAmount?: number
   contractorAmount?: number
   newDeadline?: Date
+}
+
+export interface ISubmitContract {
+  githubLink?: string
+  webLink?: string
 }
 

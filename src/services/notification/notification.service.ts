@@ -3,10 +3,10 @@ import { Notification } from '@/models/notification.model'
 import { paginate } from '@/utils/paginate'
 import mongoose from 'mongoose'
 
-const NOTIFICATION_SAFE_FIELDS = '_id user_id type title content is_read created_at updated_at'
+const NOTIFICATION_SAFE_FIELDS = '_id userId type title content isRead createdAt updatedAt'
 
 const createNotification = async (data: ICreateNotification) => {
-  if (!mongoose.Types.ObjectId.isValid(data.user_id)) {
+  if (!mongoose.Types.ObjectId.isValid(data.userId)) {
     throw new Error('Invalid user ID format')
   }
 
@@ -17,8 +17,8 @@ const createNotification = async (data: ICreateNotification) => {
 
 const createManyNotifications = async (dataList: ICreateNotification[]) => {
   for (const data of dataList) {
-    if (!mongoose.Types.ObjectId.isValid(data.user_id)) {
-      throw new Error(`Invalid user ID format: ${data.user_id}`)
+    if (!mongoose.Types.ObjectId.isValid(data.userId)) {
+      throw new Error(`Invalid user ID format: ${data.userId}`)
     }
   }
 
@@ -30,16 +30,16 @@ const createManyNotifications = async (dataList: ICreateNotification[]) => {
 const getAllNotifications = async (query: NotificationQuery) => {
   const filter: any = {}
 
-  if (query.user_id) {
-    filter.user_id = new mongoose.Types.ObjectId(query.user_id)
+  if (query.userId) {
+    filter.userId = new mongoose.Types.ObjectId(query.userId)
   }
 
   if (query.type) {
     filter.type = query.type
   }
 
-  if (query.is_read !== undefined) {
-    filter.is_read = query.is_read
+  if (query.isRead !== undefined) {
+    filter.isRead = query.isRead
   }
 
   return await paginate(Notification, filter, query, NOTIFICATION_SAFE_FIELDS)
@@ -52,7 +52,7 @@ const getNotificationById = async (id: string) => {
 
   const notification = await Notification.findById(id)
     .select(NOTIFICATION_SAFE_FIELDS)
-    .populate('user_id', '_id name email avatar')
+    .populate('userId', '_id name email avatar')
     .lean()
 
   if (!notification) {
@@ -67,14 +67,14 @@ const getNotificationsByUserId = async (userId: string, query: NotificationQuery
     throw new Error('Invalid user ID format')
   }
 
-  const filter: any = { user_id: new mongoose.Types.ObjectId(userId) }
+  const filter: any = { userId: new mongoose.Types.ObjectId(userId) }
 
   if (query.type) {
     filter.type = query.type
   }
 
-  if (query.is_read !== undefined) {
-    filter.is_read = query.is_read
+  if (query.isRead !== undefined) {
+    filter.isRead = query.isRead
   }
 
   return await paginate(Notification, filter, query, NOTIFICATION_SAFE_FIELDS)
@@ -86,8 +86,8 @@ const getUnreadCount = async (userId: string) => {
   }
 
   const count = await Notification.countDocuments({
-    user_id: new mongoose.Types.ObjectId(userId),
-    is_read: false
+    userId: new mongoose.Types.ObjectId(userId),
+    isRead: false
   } as any)
 
   return { unreadCount: count }
@@ -108,11 +108,11 @@ const markAsRead = async (id: string, userId: string) => {
     throw new Error('Notification not found')
   }
 
-  if (notification.user_id?.toString() !== userId) {
+  if (notification.userId?.toString() !== userId) {
     throw new Error('You are not authorized to update this notification')
   }
 
-  const updated = await Notification.findByIdAndUpdate(id, { is_read: true }, { new: true })
+  const updated = await Notification.findByIdAndUpdate(id, { isRead: true }, { new: true })
     .select(NOTIFICATION_SAFE_FIELDS)
     .lean()
 
@@ -125,8 +125,8 @@ const markAllAsRead = async (userId: string) => {
   }
 
   const result = await Notification.updateMany(
-    { user_id: new mongoose.Types.ObjectId(userId), is_read: false } as any,
-    { is_read: true }
+    { userId: new mongoose.Types.ObjectId(userId), isRead: false } as any,
+    { isRead: true }
   )
 
   return { modifiedCount: result.modifiedCount }
@@ -147,7 +147,7 @@ const deleteNotification = async (id: string, userId: string) => {
     throw new Error('Notification not found')
   }
 
-  if (notification.user_id?.toString() !== userId) {
+  if (notification.userId?.toString() !== userId) {
     throw new Error('You are not authorized to delete this notification')
   }
 
@@ -162,7 +162,7 @@ const deleteAllByUserId = async (userId: string) => {
   }
 
   const result = await Notification.deleteMany({
-    user_id: new mongoose.Types.ObjectId(userId)
+    userId: new mongoose.Types.ObjectId(userId)
   } as any)
 
   return { deletedCount: result.deletedCount }

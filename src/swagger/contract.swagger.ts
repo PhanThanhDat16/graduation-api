@@ -14,70 +14,79 @@
  *       properties:
  *         _id:
  *           type: string
- *         project_id:
+ *         projectId:
  *           type: string
- *         application_id:
+ *         applicationId:
  *           type: string
- *         contractor_id:
+ *         contractorId:
  *           type: object
- *         freelancer_id:
+ *         freelancerId:
  *           type: object
  *         description:
  *           type: string
- *         contractor_terms:
+ *         contractorTerms:
  *           type: string
- *         freelancer_terms:
+ *         freelancerTerms:
  *           type: string
- *         total_amount:
+ *         totalAmount:
  *           type: number
  *           description: Số tiền dự án (freelancer nhận khi hoàn thành)
- *         admin_fee:
+ *         adminFee:
  *           type: number
  *           description: Phí platform
- *         freelancer_deposit:
+ *         freelancerDeposit:
  *           type: number
  *           description: Tiền đặt cọc freelancer (hoàn lại khi hoàn thành)
- *         contractor_agreed:
+ *         contractorAgreed:
  *           type: boolean
- *         freelancer_agreed:
+ *         freelancerAgreed:
  *           type: boolean
  *         deadline:
  *           type: string
  *           format: date-time
- *         contractor_paid:
+ *         contractorPaid:
  *           type: boolean
- *         freelancer_paid:
+ *         freelancerPaid:
  *           type: boolean
- *         contractor_paid_amount:
+ *         contractorPaidAmount:
  *           type: number
- *         freelancer_paid_amount:
+ *         freelancerPaidAmount:
  *           type: number
  *         status:
  *           type: string
  *           enum: [draft, pending_agreement, waiting_payment, running, submitted, completed, dispute, cancelled]
- *         escrow_status:
+ *         escrowStatus:
  *           type: string
  *           enum: [pending, partial, funded, locked, released, refunded, split]
- *         total_escrow_amount:
+ *         totalEscrowAmount:
  *           type: number
- *         released_to_freelancer:
+ *         releasedToFreelancer:
  *           type: number
- *         refunded_to_contractor:
+ *         refundedToContractor:
  *           type: number
- *         refunded_to_freelancer:
+ *         refundedToFreelancer:
  *           type: number
- *         admin_fee_collected:
+ *         adminFeeCollected:
  *           type: number
- *         payment_info:
+ *         githubLink:
+ *           type: string
+ *           description: GitHub link submitted by freelancer
+ *         webLink:
+ *           type: string
+ *           description: Web link submitted by freelancer
+ *         submittedAt:
+ *           type: string
+ *           format: date-time
+ *         paymentInfo:
  *           type: object
  *           properties:
- *             contractor_must_pay:
+ *             contractorMustPay:
  *               type: number
- *             freelancer_must_pay:
+ *             freelancerMustPay:
  *               type: number
- *             contractor_remaining:
+ *             contractorRemaining:
  *               type: number
- *             freelancer_remaining:
+ *             freelancerRemaining:
  *               type: number
  *         createdAt:
  *           type: string
@@ -114,27 +123,27 @@
  *               type: number
  *     CreateContractRequest:
  *       type: object
- *       required: [project_id, freelancer_id, total_amount]
+ *       required: [projectId, freelancerId, totalAmount]
  *       properties:
- *         project_id:
+ *         projectId:
  *           type: string
- *         application_id:
+ *         applicationId:
  *           type: string
- *         freelancer_id:
+ *         freelancerId:
  *           type: string
  *         description:
  *           type: string
- *         contractor_terms:
+ *         contractorTerms:
  *           type: string
- *         freelancer_terms:
+ *         freelancerTerms:
  *           type: string
- *         total_amount:
+ *         totalAmount:
  *           type: number
  *           description: Số tiền dự án
- *         admin_fee:
+ *         adminFee:
  *           type: number
  *           description: Phí platform (mặc định 0)
- *         freelancer_deposit:
+ *         freelancerDeposit:
  *           type: number
  *           description: Tiền đặt cọc freelancer (mặc định 0)
  *         deadline:
@@ -145,19 +154,28 @@
  *       properties:
  *         description:
  *           type: string
- *         contractor_terms:
+ *         contractorTerms:
  *           type: string
- *         freelancer_terms:
+ *         freelancerTerms:
  *           type: string
- *         total_amount:
+ *         totalAmount:
  *           type: number
- *         admin_fee:
+ *         adminFee:
  *           type: number
- *         freelancer_deposit:
+ *         freelancerDeposit:
  *           type: number
  *         deadline:
  *           type: string
  *           format: date-time
+ *     SubmitContractRequest:
+ *       type: object
+ *       properties:
+ *         githubLink:
+ *           type: string
+ *           description: GitHub repository link
+ *         webLink:
+ *           type: string
+ *           description: Live website/demo link
  *     ExtendDeadlineRequest:
  *       type: object
  *       required: [deadline]
@@ -175,9 +193,9 @@
  *     summary: Create new contract (as contractor)
  *     description: |
  *       Contractor tạo hợp đồng mới.
- *       - total_amount: Số tiền freelancer sẽ nhận
- *       - admin_fee: Phí platform
- *       - freelancer_deposit: Tiền đặt cọc freelancer (nếu cần)
+ *       - totalAmount: Số tiền freelancer sẽ nhận
+ *       - adminFee: Phí platform
+ *       - freelancerDeposit: Tiền đặt cọc freelancer (nếu cần)
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -213,15 +231,15 @@
  *           type: string
  *           enum: [draft, pending_agreement, waiting_payment, running, submitted, completed, dispute, cancelled]
  *       - in: query
- *         name: escrow_status
+ *         name: escrowStatus
  *         schema:
  *           type: string
  *       - in: query
- *         name: contractor_id
+ *         name: contractorId
  *         schema:
  *           type: string
  *       - in: query
- *         name: freelancer_id
+ *         name: freelancerId
  *         schema:
  *           type: string
  *     responses:
@@ -255,7 +273,7 @@
  *         schema:
  *           type: string
  *       - in: query
- *         name: escrow_status
+ *         name: escrowStatus
  *         schema:
  *           type: string
  *     responses:
@@ -273,7 +291,7 @@
  *   get:
  *     tags: [Contract]
  *     summary: Get contract by ID
- *     description: Returns contract details with payment_info showing how much each party needs to pay
+ *     description: Returns contract details with paymentInfo showing how much each party needs to pay
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -338,9 +356,9 @@
  *     tags: [Contract]
  *     summary: Pay deposit for contract
  *     description: |
- *       - Contractor pays: total_amount + admin_fee
- *       - Freelancer pays: freelancer_deposit (if > 0)
- *       When both paid (or freelancer_deposit = 0), status changes to running
+ *       - Contractor pays: totalAmount + adminFee
+ *       - Freelancer pays: freelancerDeposit (if > 0)
+ *       When both paid (or freelancerDeposit = 0), status changes to running
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -360,7 +378,13 @@
  *   post:
  *     tags: [Contract]
  *     summary: Submit contract (freelancer only)
- *     description: Freelancer marks work as done
+ *     description: Freelancer marks work as done with optional GitHub and web links
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/SubmitContractRequest'
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -382,9 +406,9 @@
  *     summary: Complete contract (contractor only)
  *     description: |
  *       Contractor accepts the work. This will:
- *       - Release total_amount to freelancer
- *       - Refund freelancer_deposit to freelancer
- *       - Collect admin_fee
+ *       - Release totalAmount to freelancer
+ *       - Refund freelancerDeposit to freelancer
+ *       - Collect adminFee
  *     security:
  *       - bearerAuth: []
  *     parameters:

@@ -13,15 +13,15 @@
  *       type: object
  *       required: [action, note]
  *       properties:
- *         contract_id:
+ *         contractId:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734acfe"
  *           description: Contract ID (optional)
- *         dispute_id:
+ *         disputeId:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734acff"
  *           description: Dispute ID (optional)
- *         user_id:
+ *         userId:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734ad00"
  *           description: Target user ID (optional)
@@ -76,16 +76,16 @@
  *         _id:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734ad01"
- *         admin_id:
+ *         adminId:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734acfd"
- *         contract_id:
+ *         contractId:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734acfe"
- *         dispute_id:
+ *         disputeId:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734acff"
- *         user_id:
+ *         userId:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734ad00"
  *         action:
@@ -104,7 +104,7 @@
  *         _id:
  *           type: string
  *           example: "60a7b2f7c6e9fa001734ad01"
- *         admin_id:
+ *         adminId:
  *           type: object
  *           properties:
  *             _id:
@@ -119,19 +119,19 @@
  *             avatar:
  *               type: string
  *               example: "https://example.com/avatar.jpg"
- *         contract_id:
+ *         contractId:
  *           type: object
  *           properties:
  *             _id:
  *               type: string
  *               example: "60a7b2f7c6e9fa001734acfe"
- *             project_id:
+ *             projectId:
  *               type: string
  *               example: "60a7b2f7c6e9fa001734acf0"
  *             status:
  *               type: string
  *               example: "running"
- *         dispute_id:
+ *         disputeId:
  *           type: object
  *           properties:
  *             _id:
@@ -143,7 +143,7 @@
  *             reason:
  *               type: string
  *               example: "Quality of work not met"
- *         user_id:
+ *         userId:
  *           type: object
  *           properties:
  *             _id:
@@ -232,7 +232,7 @@
  *   post:
  *     tags: [AdminHistory]
  *     summary: Create a new admin history entry
- *     description: Creates a new admin action history record. The admin_id is automatically taken from the authenticated user's token.
+ *     description: Creates a new admin action history record. The adminId is automatically taken from the authenticated user's token.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -296,22 +296,22 @@
  *           enum: [asc, desc]
  *         description: Sort order
  *       - in: query
- *         name: admin_id
+ *         name: adminId
  *         schema:
  *           type: string
  *         description: Filter by admin ID
  *       - in: query
- *         name: contract_id
+ *         name: contractId
  *         schema:
  *           type: string
  *         description: Filter by contract ID
  *       - in: query
- *         name: dispute_id
+ *         name: disputeId
  *         schema:
  *           type: string
  *         description: Filter by dispute ID
  *       - in: query
- *         name: user_id
+ *         name: userId
  *         schema:
  *           type: string
  *         description: Filter by target user ID

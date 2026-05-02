@@ -34,12 +34,12 @@ const createReview = async (reviewerId: string, data: ICreateReview) => {
     throw new Error('Cannot review unfinished contract')
   }
 
-  if(contract.contractor_id.toString() === reviewerId){
+  if(contract.contractorId.toString() === reviewerId){
     role = 'contractor'
-    revieweeId = contract.freelancer_id.toString()
-  } else if (contract.freelancer_id.toString() === reviewerId){
+    revieweeId = contract.freelancerId.toString()
+  } else if (contract.freelancerId.toString() === reviewerId){
     role = 'freelancer'
-    revieweeId = contract.contractor_id.toString()
+    revieweeId = contract.contractorId.toString()
   } else {
     throw new Error('You are not authorized to review this contract!')
   }

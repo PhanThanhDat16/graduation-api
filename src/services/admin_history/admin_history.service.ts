@@ -3,22 +3,22 @@ import { AdminHistory } from '@/models/admin_history.model'
 import { paginate } from '@/utils/paginate'
 import mongoose from 'mongoose'
 
-const ADMIN_HISTORY_SAFE_FIELDS = '_id admin_id contract_id dispute_id user_id action note createdAt'
+const ADMIN_HISTORY_SAFE_FIELDS = '_id adminId contractId disputeId userId action note createdAt'
 
 const createAdminHistory = async (data: ICreateAdminHistory) => {
-  if (!mongoose.Types.ObjectId.isValid(data.admin_id)) {
+  if (!mongoose.Types.ObjectId.isValid(data.adminId)) {
     throw new Error('Invalid admin ID format')
   }
 
-  if (data.contract_id && !mongoose.Types.ObjectId.isValid(data.contract_id)) {
+  if (data.contractId && !mongoose.Types.ObjectId.isValid(data.contractId)) {
     throw new Error('Invalid contract ID format')
   }
 
-  if (data.dispute_id && !mongoose.Types.ObjectId.isValid(data.dispute_id)) {
+  if (data.disputeId && !mongoose.Types.ObjectId.isValid(data.disputeId)) {
     throw new Error('Invalid dispute ID format')
   }
 
-  if (data.user_id && !mongoose.Types.ObjectId.isValid(data.user_id)) {
+  if (data.userId && !mongoose.Types.ObjectId.isValid(data.userId)) {
     throw new Error('Invalid user ID format')
   }
 
@@ -30,20 +30,20 @@ const createAdminHistory = async (data: ICreateAdminHistory) => {
 const getAllAdminHistories = async (query: AdminHistoryQuery) => {
   const filter: any = {}
 
-  if (query.admin_id) {
-    filter.admin_id = new mongoose.Types.ObjectId(query.admin_id)
+  if (query.adminId) {
+    filter.adminId = new mongoose.Types.ObjectId(query.adminId)
   }
 
-  if (query.contract_id) {
-    filter.contract_id = new mongoose.Types.ObjectId(query.contract_id)
+  if (query.contractId) {
+    filter.contractId = new mongoose.Types.ObjectId(query.contractId)
   }
 
-  if (query.dispute_id) {
-    filter.dispute_id = new mongoose.Types.ObjectId(query.dispute_id)
+  if (query.disputeId) {
+    filter.disputeId = new mongoose.Types.ObjectId(query.disputeId)
   }
 
-  if (query.user_id) {
-    filter.user_id = new mongoose.Types.ObjectId(query.user_id)
+  if (query.userId) {
+    filter.userId = new mongoose.Types.ObjectId(query.userId)
   }
 
   if (query.action) {
@@ -60,10 +60,10 @@ const getAdminHistoryById = async (id: string) => {
 
   const history = await AdminHistory.findById(id)
     .select(ADMIN_HISTORY_SAFE_FIELDS)
-    .populate('admin_id', '_id name email avatar')
-    .populate('contract_id', '_id project_id status')
-    .populate('dispute_id', '_id status reason')
-    .populate('user_id', '_id name email avatar')
+    .populate('adminId', '_id name email avatar')
+    .populate('contractId', '_id projectId status')
+    .populate('disputeId', '_id status reason')
+    .populate('userId', '_id name email avatar')
     .lean()
 
   if (!history) {
@@ -78,11 +78,11 @@ const getHistoriesByAdminId = async (adminId: string) => {
     throw new Error('Invalid admin ID format')
   }
 
-  const histories = await AdminHistory.find({ admin_id: new mongoose.Types.ObjectId(adminId) } as any)
+  const histories = await AdminHistory.find({ adminId: new mongoose.Types.ObjectId(adminId) } as any)
     .select(ADMIN_HISTORY_SAFE_FIELDS)
-    .populate('contract_id', '_id project_id status')
-    .populate('dispute_id', '_id status reason')
-    .populate('user_id', '_id name email avatar')
+    .populate('contractId', '_id projectId status')
+    .populate('disputeId', '_id status reason')
+    .populate('userId', '_id name email avatar')
     .sort({ createdAt: -1 })
     .lean()
 
@@ -94,9 +94,9 @@ const getHistoriesByContractId = async (contractId: string) => {
     throw new Error('Invalid contract ID format')
   }
 
-  const histories = await AdminHistory.find({ contract_id: new mongoose.Types.ObjectId(contractId) } as any)
+  const histories = await AdminHistory.find({ contractId: new mongoose.Types.ObjectId(contractId) } as any)
     .select(ADMIN_HISTORY_SAFE_FIELDS)
-    .populate('admin_id', '_id name email avatar')
+    .populate('adminId', '_id name email avatar')
     .sort({ createdAt: -1 })
     .lean()
 
@@ -108,9 +108,9 @@ const getHistoriesByDisputeId = async (disputeId: string) => {
     throw new Error('Invalid dispute ID format')
   }
 
-  const histories = await AdminHistory.find({ dispute_id: new mongoose.Types.ObjectId(disputeId) } as any)
+  const histories = await AdminHistory.find({ disputeId: new mongoose.Types.ObjectId(disputeId) } as any)
     .select(ADMIN_HISTORY_SAFE_FIELDS)
-    .populate('admin_id', '_id name email avatar')
+    .populate('adminId', '_id name email avatar')
     .sort({ createdAt: -1 })
     .lean()
 
@@ -122,9 +122,9 @@ const getHistoriesByUserId = async (userId: string) => {
     throw new Error('Invalid user ID format')
   }
 
-  const histories = await AdminHistory.find({ user_id: new mongoose.Types.ObjectId(userId) } as any)
+  const histories = await AdminHistory.find({ userId: new mongoose.Types.ObjectId(userId) } as any)
     .select(ADMIN_HISTORY_SAFE_FIELDS)
-    .populate('admin_id', '_id name email avatar')
+    .populate('adminId', '_id name email avatar')
     .sort({ createdAt: -1 })
     .lean()
 
@@ -146,7 +146,7 @@ const updateAdminHistory = async (id: string, adminId: string, data: IUpdateAdmi
     throw new Error('Admin history not found')
   }
 
-  if (findHistory.admin_id?.toString() !== adminId) {
+  if (findHistory.adminId?.toString() !== adminId) {
     throw new Error('You are not authorized to update this history')
   }
 
@@ -176,7 +176,7 @@ const deleteAdminHistory = async (id: string, adminId: string) => {
     throw new Error('Admin history not found')
   }
 
-  if (findHistory.admin_id?.toString() !== adminId) {
+  if (findHistory.adminId?.toString() !== adminId) {
     throw new Error('You are not authorized to delete this history')
   }
 
