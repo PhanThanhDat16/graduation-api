@@ -187,12 +187,18 @@ const getAllWithdrawRequests = expressAsyncHandler(async (req: Request, res: Res
 
 // Admin: Process withdraw request
 const processWithdrawRequest = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const adminId = req.user?._id
+  const staffId = req.user?._id
+  const role = req.user?.role;
   const id = req.params.id as string
   const { status } = req.body
 
-  if (!adminId) {
+  if (!staffId) {
     res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
+    return
+  }
+
+  if (role !== 'staff') {
+    res.status(HttpStatus.FORBIDDEN).json({ message: 'Forbidden' })
     return
   }
 
@@ -206,7 +212,7 @@ const processWithdrawRequest = expressAsyncHandler(async (req: RequestWithUser, 
     return
   }
 
-  const result = await walletService.processWithdrawRequest(id, status, adminId as string)
+  const result = await walletService.processWithdrawRequest(id, status, staffId as string)
 
   res.status(HttpStatus.OK).json({
     message: 'Withdraw request processed successfully',

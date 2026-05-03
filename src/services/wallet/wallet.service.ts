@@ -16,6 +16,10 @@ import {
   WithdrawRequestFilter,
   ICreateTransaction
 } from '@/constants/wallet.constants'
+import { User } from '@/models/user.model'
+import moment from 'moment'
+import transporter from '@/config/nodemailer'
+import { generatePaymentReceiptEmail } from '@/utils/email_receipt'
 
 interface ContractTransactionOptions {
   contract_id?: string
@@ -26,7 +30,7 @@ interface ContractTransactionOptions {
 // const WALLET_FIELDS = '_id user_id balance createdAt updatedAt'
 const TRANSACTION_FIELDS =
   '_id wallet_id amount type method_payment status user_id contract_id payer_type payment_order_id description createdAt'
-const WITHDRAW_REQUEST_FIELDS = '_id account_id amount status admin_id createdAt processed_at'
+const WITHDRAW_REQUEST_FIELDS = '_id account_id amount amountReceived status staffId createdAt processed_at'
 
 // Get or create wallet for user
 const getOrCreateWallet = async (userId: string) => {
@@ -447,9 +451,13 @@ const createWithdrawRequest = async (userId: string, amount: number, accountId: 
     throw new Error('You already have a pending withdraw request')
   }
 
+  const fee = amount * 0.02;
+  const amountReceived = amount - fee;
+
   const request = await WithdrawRequest.create({
     account_id: new mongoose.Types.ObjectId(accountId),
     amount,
+    amountReceived,
     status: EWithdrawStatus.PENDING
   })
 
@@ -508,14 +516,14 @@ const getAllWithdrawRequests = async (query: PaginationQuery & WithdrawRequestFi
   return result
 }
 
-// Process withdraw request (admin)
-const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus, adminId: string) => {
+// Process withdraw request (staff)
+const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus, staffId: string) => {
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
     throw new Error('Invalid request ID format')
   }
 
-  if (!mongoose.Types.ObjectId.isValid(adminId)) {
-    throw new Error('Invalid admin ID format')
+  if (!mongoose.Types.ObjectId.isValid(staffId)) {
+    throw new Error('Invalid staff ID format')
   }
 
   const request = await WithdrawRequest.findById(requestId).populate('account_id')
@@ -528,8 +536,55 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
     throw new Error('This request has already been processed')
   }
 
+  // Find the account and populate the user
+  const account = await Account.findById(request.account_id).populate('userId')
+  
+  // type guard for user
+  if (!account || !account.userId) {
+    throw new Error('User not found')
+  }
+
+  const senderName = "FREEWORK";
+  const senderAccount = "929686868668";
+  const senderBank = "MBBANK";
+
+  const email = (account.userId as any).email;
+  const accountName = account.accountName;
+  const accountNumber = account.accountNumber;
+  const bankName = account.bankShortName;
+  const amountRequest = request.amount;
+  const amountReceived = request.amountReceived;
+  const fee = amountRequest * 0.02;
+  const requestId_withdraw = request._id.toString();
+
+
+  const time = new Date().toLocaleString("vi-VN");
+
   const requestUserId = (request.account_id as any)?.userId
   if (!requestUserId) throw new Error('Account owner not found')
+
+  const htmlResult = generatePaymentReceiptEmail({
+    senderName,
+    senderAccount,
+    senderBank,
+    recipientName:    accountName,
+    recipientAccount: accountNumber,
+    recipientBank:    bankName,
+    transactionId:    request._id.toString(),
+    amount:           amountRequest,
+    amountReceived,
+    fee,
+    note:             `${senderName} chuyen tien`,
+    time,
+    requestId:        requestId_withdraw,
+  });
+
+  const mailOptions = {
+    from: `"FreeWork" <${process.env.AUTH_EMAIL}>`,
+    to: email,
+    subject: "Biên Lai Thanh Toán",
+    html: htmlResult
+  }
 
   const session = await mongoose.startSession()
   session.startTransaction()
@@ -572,11 +627,13 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
       requestId,
       {
         status,
-        admin_id: new mongoose.Types.ObjectId(adminId),
+        staffId: new mongoose.Types.ObjectId(staffId),
         processed_at: new Date()
       },
       { new: true, session }
     ).lean()
+
+    await transporter.sendMail(mailOptions as any)
 
     await session.commitTransaction()
 

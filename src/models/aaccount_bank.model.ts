@@ -48,7 +48,11 @@ const accountSchema = new mongoose.Schema(
       default: EAccountStatus.ACTIVE
     }
   },
-  { timestamps: true }
+  {
+    versionKey: false,
+    strict: true,
+    timestamps: true
+  }
 )
 
 accountSchema.index({ userId: 1 })

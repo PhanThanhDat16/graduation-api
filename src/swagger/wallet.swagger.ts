@@ -164,6 +164,8 @@
  *           $ref: '#/components/schemas/AccountDataResponseInWithdraw'
  *         amount:
  *           type: number
+ *         amountReceived:
+ *           type: number
  *         status:
  *           type: string
  *           enum: [pending, approved, rejected, paid]

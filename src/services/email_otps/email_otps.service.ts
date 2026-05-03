@@ -46,7 +46,7 @@ const generatePassword = (
 
 const messageSend = (email: string, otpCode: string, subject: string) => {
   const mailOptions = {
-    from: `"DevFreelance " <${process.env.AUTH_EMAIL}>`,
+    from: `"FreeWork " <${process.env.AUTH_EMAIL}>`,
     to: email,
     subject: subject,
     html: `
