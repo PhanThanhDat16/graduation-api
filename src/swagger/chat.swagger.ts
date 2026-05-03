@@ -15,7 +15,7 @@
  *       properties:
  *         type:
  *           type: string
- *           enum: [contract_chat, guest_support]
+ *           enum: [contract_chat, dispute, guest_support, user_support]
  *           description: Type of chat group
  *         disputeId:
  *           type: string
@@ -53,8 +53,11 @@
  *           type: string
  *         type:
  *           type: string
- *           enum: [contract_chat, guest_support]
+ *           enum: [contract_chat, dispute, guest_support, user_support]
  *         disputeId:
+ *           type: string
+ *           nullable: true
+ *         assignedStaffId:
  *           type: string
  *           nullable: true
  *         lastMessage:
@@ -156,7 +159,7 @@
  *           type: string
  *         role:
  *           type: string
- *           enum: [member, administrator]
+ *           enum: [member, owner]
  *         joinedAt:
  *           type: string
  *           format: date-time
@@ -170,11 +173,43 @@
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/GroupMember'
+ *
+ *     SaveMessageRequest:
+ *       type: object
+ *       required: [content]
+ *       properties:
+ *         content:
+ *           type: string
+ *           description: The content of the message
+ *         userId:
+ *           type: string
+ *           nullable: true
+ *           description: User ID for authenticated users
+ *         guestName:
+ *           type: string
+ *           nullable: true
+ *           description: Guest name for guest users
+ *         senderType:
+ *           type: string
+ *           description: Type of sender (user, staff, guest)
+ *           example: user
+ *         type:
+ *           type: string
+ *           description: Message type (text, image, file, system)
+ *           default: text
+ *
+ *     MessageResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *         data:
+ *           $ref: '#/components/schemas/Message'
  */
 
 /**
  * @openapi
- * /api/chat/{groupId}/messages:
+ * /api/chat/groups/{groupId}/messages:
  *   post:
  *     tags: [Chat]
  *     summary: Create a new message in chat group
@@ -245,6 +280,33 @@
  *         description: Invalid groupId
  *       401:
  *         description: Unauthorized - authentication required
+ */
+
+/**
+ * @openapi
+ * /api/chat/groups/{groupId}/messages/guest:
+ *   get:
+ *     tags: [Chat]
+ *     summary: Get guest messages in a chat group
+ *     description: Retrieves messages from a specific chat group for guest users
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Chat group ID
+ *     responses:
+ *       200:
+ *         description: Guest messages retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessagesPaginatedResponse'
+ *       400:
+ *         description: Invalid groupId
+ *       404:
+ *         description: Chat group not found
  */
 
 /**

@@ -35,34 +35,34 @@ export enum EWithdrawStatus {
 
 export interface WalletTransactionFilter {
   type?: ETransactionType
-  method_payment?: EPaymentMethod
+  methodPayment?: EPaymentMethod
   status?: ETransactionStatus
-  user_id?: string
+  userId?: string
 }
 
 export interface WithdrawRequestFilter {
   status?: EWithdrawStatus
-  user_id?: string
+  userId?: string
 }
 
 export interface ICreateTransaction {
-  wallet_id: string
+  walletId: string
   amount: number
   type: ETransactionType
-  method_payment?: EPaymentMethod
+  methodPayment?: EPaymentMethod
   status?: ETransactionStatus
-  user_id?: string
-  contract_id?: string
-  payer_type?: EPayerType
+  userId?: string
+  contractId?: string
+  payerType?: EPayerType
   description?: string
 }
 
 export interface ICreateWithdrawRequest {
-  user_id: string
+  userId: string
   amount: number
 }
 
 export interface IUpdateWithdrawRequest {
   status: EWithdrawStatus
-  admin_id: string
+  adminId: string
 }

@@ -3,7 +3,7 @@ import mongoose, { Document } from 'mongoose'
 
 const withdrawRequestSchema = new mongoose.Schema(
   {
-    account_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true },
+    accountId: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true },
     amount: { type: Number, required: true, min: 0 },
     amountReceived: { type: Number, required: true, min: 0},
     status: { type: String, enum: EWithdrawStatus, default: 'pending' },
@@ -17,16 +17,16 @@ const withdrawRequestSchema = new mongoose.Schema(
   }
 )
 
-withdrawRequestSchema.index({ account_id: 1, status: 1 })
+withdrawRequestSchema.index({ accountId: 1, status: 1 })
 
 export const WithdrawRequest = mongoose.model('WithdrawRequest', withdrawRequestSchema)
 
 export interface IWithdrawRequest extends Document {
-  account_id: mongoose.Types.ObjectId
+  accountId: mongoose.Types.ObjectId
   amount: number
   amountReceived: number
   status: EWithdrawStatus
   staffId?: mongoose.Types.ObjectId
   createdAt: Date
-  processed_at?: Date
+  processedAt?: Date
 }

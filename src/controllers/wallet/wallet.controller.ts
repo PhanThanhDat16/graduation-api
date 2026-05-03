@@ -43,7 +43,7 @@ const getMyWallet = expressAsyncHandler(async (req: RequestWithUser, res: Respon
 // Deposit to wallet
 const deposit = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const userId = req.user?._id
-  const { amount, method_payment } = req.body
+  const { amount, methodPayment } = req.body
 
   if (!userId) {
     res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
@@ -55,12 +55,12 @@ const deposit = expressAsyncHandler(async (req: RequestWithUser, res: Response) 
     return
   }
 
-  if (!method_payment || !Object.values(EPaymentMethod).includes(method_payment)) {
-    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Valid method_payment is required (momo, vnpay, wallet)' })
+  if (!methodPayment || !Object.values(EPaymentMethod).includes(methodPayment)) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Valid methodPayment is required (momo, vnpay, wallet)' })
     return
   }
 
-  const result = await walletService.deposit(userId as string, amount, method_payment)
+  const result = await walletService.deposit(userId as string, amount, methodPayment)
 
   res.status(HttpStatus.OK).json({
     message: 'Deposit successfully',
@@ -82,7 +82,7 @@ const getMyTransactions = expressAsyncHandler(async (req: RequestWithUser, res: 
     page: query.page ? Number(query.page) : 1,
     limit: query.limit ? Number(query.limit) : 10,
     type: query.type as string | undefined,
-    method_payment: query.method_payment as string | undefined,
+    methodPayment: query.methodPayment as string | undefined,
     status: query.status as string | undefined
   }
 
@@ -97,7 +97,7 @@ const getMyTransactions = expressAsyncHandler(async (req: RequestWithUser, res: 
 // Create withdraw request
 const createWithdrawRequest = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const userId = req.user?._id
-  const { amount, account_id } = req.body
+  const { amount, accountId } = req.body
 
   if (!userId) {
     res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
@@ -109,12 +109,12 @@ const createWithdrawRequest = expressAsyncHandler(async (req: RequestWithUser, r
     return
   }
 
-  if (!account_id) {
+  if (!accountId) {
     res.status(HttpStatus.BAD_REQUEST).json({ message: 'Account ID is required' })
     return
   }
 
-  const request = await walletService.createWithdrawRequest(userId as string, amount, account_id as string)
+  const request = await walletService.createWithdrawRequest(userId as string, amount, accountId as string)
 
   res.status(HttpStatus.OK).json({
     message: 'Withdraw request created successfully',
@@ -174,7 +174,7 @@ const getAllWithdrawRequests = expressAsyncHandler(async (req: Request, res: Res
     page: query.page ? Number(query.page) : 1,
     limit: query.limit ? Number(query.limit) : 10,
     status: query.status as string | undefined,
-    user_id: query.user_id as string | undefined
+    userId: query.userId as string | undefined
   }
 
   const result = await walletService.getAllWithdrawRequests(filter)
@@ -240,7 +240,7 @@ const getUserWallet = expressAsyncHandler(async (req: Request, res: Response) =>
 // Admin: Deposit to user wallet
 const adminDeposit = expressAsyncHandler(async (req: Request, res: Response) => {
   const userId = req.params.userId as string
-  const { amount, method_payment } = req.body
+  const { amount, methodPayment } = req.body
 
   if (!userId) {
     res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID is required' })
@@ -252,7 +252,7 @@ const adminDeposit = expressAsyncHandler(async (req: Request, res: Response) => 
     return
   }
 
-  const result = await walletService.deposit(userId, amount, method_payment || EPaymentMethod.WALLET)
+  const result = await walletService.deposit(userId, amount, methodPayment || EPaymentMethod.WALLET)
 
   res.status(HttpStatus.OK).json({
     message: 'Deposit successfully',
@@ -267,7 +267,7 @@ const getAllWallets = expressAsyncHandler(async (req: Request, res: Response) =>
   const filter = {
     page: query.page ? Number(query.page) : 1,
     limit: query.limit ? Number(query.limit) : 10,
-    user_id: query.user_id as string | undefined
+    userId: query.userId as string | undefined
   }
 
   const result = await walletService.getAllWallets(filter)

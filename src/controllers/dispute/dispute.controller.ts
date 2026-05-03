@@ -15,16 +15,16 @@ const createDispute = expressAsyncHandler(async (req: RequestWithUser, res: Resp
     return
   }
 
-  const { contract_id, reason } = req.body
+  const { contractId, reason } = req.body
 
-  if (!contract_id) {
-    res.status(HttpStatus.BAD_REQUEST).json({ message: 'contract_id is required' })
+  if (!contractId) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'contractId is required' })
     return
   }
 
   const dispute = await disputeService.createDispute({
-    contract_id,
-    opened_by: userId as string,
+    contractId,
+    openedBy: userId as string,
     reason
   })
 
@@ -51,7 +51,7 @@ const getDisputeById = expressAsyncHandler(async (req: Request, res: Response) =
   })
 })
 
-// Get all disputes (admin)
+// Get all disputes (staff)
 const getAllDisputes = expressAsyncHandler(async (req: Request, res: Response) => {
   const query = req.query
 
@@ -59,9 +59,9 @@ const getAllDisputes = expressAsyncHandler(async (req: Request, res: Response) =
     page: query.page ? Number(query.page) : 1,
     limit: query.limit ? Number(query.limit) : 10,
     status: query.status as string | undefined,
-    contract_id: query.contract_id as string | undefined,
-    contractor_id: query.contractor_id as string | undefined,
-    freelancer_id: query.freelancer_id as string | undefined
+    contractId: query.contractId as string | undefined,
+    contractorId: query.contractorId as string | undefined,
+    freelancerId: query.freelancerId as string | undefined
   }
 
   const result = await disputeService.getAllDisputes(filter)
@@ -100,7 +100,7 @@ const getMyDisputes = expressAsyncHandler(async (req: RequestWithUser, res: Resp
 const submitReason = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const userId = req.user?._id
   const id = req.params.id as string
-  const { reason, requested_resolution } = req.body
+  const { reason, requestedResolution } = req.body
 
   if (!userId) {
     res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
@@ -117,7 +117,7 @@ const submitReason = expressAsyncHandler(async (req: RequestWithUser, res: Respo
     return
   }
 
-  const dispute = await disputeService.submitReason(id, userId as string, reason, requested_resolution)
+  const dispute = await disputeService.submitReason(id, userId as string, reason, requestedResolution)
 
   res.status(HttpStatus.OK).json({
     message: 'Reason submitted successfully',
@@ -129,7 +129,7 @@ const submitReason = expressAsyncHandler(async (req: RequestWithUser, res: Respo
 const proposeResolution = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const userId = req.user?._id
   const id = req.params.id as string
-  const { resolution_type, freelancer_amount, contractor_amount, new_deadline } = req.body
+  const { resolutionType, freelancerAmount, contractorAmount, newDeadline } = req.body
 
   if (!userId) {
     res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
@@ -141,16 +141,16 @@ const proposeResolution = expressAsyncHandler(async (req: RequestWithUser, res: 
     return
   }
 
-  if (!resolution_type || !Object.values(EResolutionType).includes(resolution_type)) {
-    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Valid resolution_type is required (extend, cancel, split)' })
+  if (!resolutionType || !Object.values(EResolutionType).includes(resolutionType)) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Valid resolutionType is required (extend, cancel, split)' })
     return
   }
 
   const dispute = await disputeService.proposeResolution(id, userId as string, {
-    resolution_type,
-    freelancer_amount,
-    contractor_amount,
-    new_deadline: new_deadline ? new Date(new_deadline) : undefined
+    resolutionType,
+    freelancerAmount,
+    contractorAmount,
+    newDeadline: newDeadline ? new Date(newDeadline) : undefined
   })
 
   res.status(HttpStatus.OK).json({
@@ -182,8 +182,8 @@ const agreeToResolution = expressAsyncHandler(async (req: RequestWithUser, res: 
   })
 })
 
-// Escalate to admin
-const escalateToAdmin = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+// Escalate dispute — cả 2 bên đều có thể nhấn sau khi hết countdown
+const escalateDispute = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const userId = req.user?._id
   const id = req.params.id as string
 
@@ -197,21 +197,20 @@ const escalateToAdmin = expressAsyncHandler(async (req: RequestWithUser, res: Re
     return
   }
 
-  const dispute = await disputeService.escalateToAdmin(id, userId as string)
+  const dispute = await disputeService.escalateDispute(id, userId as string)
 
   res.status(HttpStatus.OK).json({
-    message: 'Dispute escalated to admin successfully',
+    message: 'Dispute escalated successfully',
     data: dispute
   })
 })
 
-// Admin resolve dispute
-const adminResolveDispute = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const adminId = req.user?._id
+// Staff join dispute group
+const staffJoinDispute = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const staffId = req.user?._id
   const id = req.params.id as string
-  const { decision, resolution_type, freelancer_amount, contractor_amount, new_deadline } = req.body
 
-  if (!adminId) {
+  if (!staffId) {
     res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
     return
   }
@@ -221,16 +220,86 @@ const adminResolveDispute = expressAsyncHandler(async (req: RequestWithUser, res
     return
   }
 
-  if (!decision || !resolution_type) {
-    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Decision and resolution_type are required' })
+  const dispute = await disputeService.staffJoinDispute(id, staffId as string)
+
+  res.status(HttpStatus.OK).json({
+    message: 'Staff joined dispute group successfully',
+    data: dispute
+  })
+})
+
+// Staff cancel dispute
+const staffCancelDispute = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const staffId = req.user?._id
+  const id = req.params.id as string
+  const { reason } = req.body
+
+  if (!staffId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
     return
   }
 
-  const dispute = await disputeService.adminResolveDispute(id, adminId as string, decision, {
-    resolution_type,
-    freelancer_amount: freelancer_amount || 0,
-    contractor_amount: contractor_amount || 0,
-    new_deadline: new_deadline ? new Date(new_deadline) : undefined
+  if (!id) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Dispute ID is required' })
+    return
+  }
+
+  if (!reason) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Cancel reason is required' })
+    return
+  }
+
+  const dispute = await disputeService.staffCancelDispute(id, staffId as string, reason)
+
+  res.status(HttpStatus.OK).json({
+    message: 'Dispute cancelled by staff',
+    data: dispute
+  })
+})
+
+// Check reason deadline (utility endpoint)
+const checkReasonDeadline = expressAsyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string
+
+  if (!id) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Dispute ID is required' })
+    return
+  }
+
+  const dispute = await disputeService.checkReasonDeadline(id)
+
+  res.status(HttpStatus.OK).json({
+    message: 'Reason deadline checked',
+    data: dispute
+  })
+})
+
+// Staff resolve dispute — Trường hợp 3: cả hai bên không đồng ý
+const staffResolveDispute = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
+  const staffId = req.user?._id
+  const id = req.params.id as string
+  const { decision, resolutionType, freelancerAmount, contractorAmount, newDeadline } = req.body
+
+  if (!staffId) {
+    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
+    return
+  }
+
+  if (!id) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Dispute ID is required' })
+    return
+  }
+
+  if (!decision || !resolutionType) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'decision and resolutionType are required' })
+    return
+  }
+
+  const dispute = await disputeService.staffResolveDispute(id, staffId as string, decision, {
+    resolutionType,
+    freelancerAmount: freelancerAmount || 0,
+    contractorAmount: contractorAmount || 0,
+    newDeadline: newDeadline ? new Date(newDeadline) : undefined
   })
 
   res.status(HttpStatus.OK).json({
@@ -264,7 +333,10 @@ export const disputeController = {
   submitReason,
   proposeResolution,
   agreeToResolution,
-  escalateToAdmin,
-  adminResolveDispute,
+  escalateDispute,
+  staffJoinDispute,
+  staffCancelDispute,
+  checkReasonDeadline,
+  staffResolveDispute,
   getDisputeByContractId
 }

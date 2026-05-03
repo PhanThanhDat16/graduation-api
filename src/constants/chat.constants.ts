@@ -1,11 +1,13 @@
 export enum EChatGroupType {
   CONTRACT_CHAT = 'contract_chat',
-  GUEST_SUPPORT = 'guest_support'
+  DISPUTE = 'dispute',
+  GUEST_SUPPORT = 'guest_support',
+  USER_SUPPORT = 'user_support'
 }
 
 export enum EChatMemberRole {
   MEMBER = 'member',
-  ADMINISTRATOR = 'administrator'
+  OWNER = 'owner'
 }
 export enum EMessageType {
   TEXT = 'text',
@@ -16,7 +18,7 @@ export enum EMessageType {
 
 export interface PublicChatUser {
   _id: string
-  full_name: string
+  fullName: string
   avatar: string
 }
 
@@ -26,6 +28,7 @@ export interface ChatGroupListItem {
   ownerId: string | null
   type: EChatGroupType
   disputeId: string | null
+  assignedStaffId: string | null
   lastMessage: string
   lastMessageAt: Date | null
   lastSenderId: PublicChatUser | null
@@ -44,6 +47,7 @@ export interface MessageWithRelations {
   _id: string
   groupId: string
   senderId: PublicChatUser | null
+  senderType: string
   type: EMessageType
   content: string
   replyTo: ReplyPreview | null

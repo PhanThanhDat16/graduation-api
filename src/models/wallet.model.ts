@@ -2,7 +2,7 @@ import mongoose, { Document } from 'mongoose'
 
 const walletSchema = new mongoose.Schema(
   {
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     balance: { type: Number, default: 0, min: 0 }
   },
   {
@@ -15,7 +15,7 @@ const walletSchema = new mongoose.Schema(
 export const Wallet = mongoose.model('Wallet', walletSchema)
 
 export interface IWallet extends Document {
-  user_id: mongoose.Types.ObjectId
+  userId: mongoose.Types.ObjectId
   balance: number
   createdAt: Date
   updatedAt: Date

@@ -25,6 +25,7 @@ export function setupSocket(server: http.Server): void {
       const { groupId } = data
       const room = chatRoomForGroup(groupId)
       socket.join(room)
+      console.log(`[Socket] ${socket.id} joined room: ${room}`)
     })
 
     // STAFF JOIN CONVERSATION GENERAL (to response guest)
@@ -37,14 +38,11 @@ export function setupSocket(server: http.Server): void {
       const { groupId } = data
       const room = chatRoomForGroup(groupId)
       socket.join(room)
-      io.to('staff_room_general').emit('new_conversation', {
-        groupId
-      })
+      io.to('staff_room_general').emit('new_conversation')
     })
 
     socket.on('disconnect', (reason) => {
       console.log(`[Socket] User disconnected: ${socket.id} - Reason: ${reason}`)
     })
-
   })
 }

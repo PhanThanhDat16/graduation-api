@@ -41,20 +41,20 @@ export enum ENotificationType {
 }
 
 export interface NotificationFilter {
-  user_id?: string
+  userId?: string
   type?: ENotificationType
-  is_read?: boolean
+  isRead?: boolean
 }
 
 export interface ICreateNotification {
-  user_id: string
+  userId: string
   type: ENotificationType
   title: string
   content: string
 }
 
 export interface IUpdateNotification {
-  is_read?: boolean
+  isRead?: boolean
 }
 
 export interface NotificationQuery extends PaginationQuery, NotificationFilter {}

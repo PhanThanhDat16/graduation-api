@@ -2,6 +2,7 @@ import { EDisputeStatus } from './dispute_form.constants'
 
 export enum EContractStatus {
   DRAFT = 'draft',
+  CLOSED_FOR_REQUESTS = 'closed_for_requests',
   PENDING_AGREEMENT = 'pending_agreement',
   WAITING_PAYMENT = 'waiting_payment',
   RUNNING = 'running',
@@ -30,55 +31,61 @@ export enum EResolutionType {
 
 export interface ContractFilter {
   status?: EContractStatus
-  escrow_status?: EEscrowStatus
-  contractor_id?: string
-  freelancer_id?: string
-  project_id?: string
+  escrowStatus?: EEscrowStatus
+  contractorId?: string
+  freelancerId?: string
+  projectId?: string
 }
 
 export interface DisputeFilter {
   status?: EDisputeStatus
-  contract_id?: string
-  contractor_id?: string
-  freelancer_id?: string
+  contractId?: string
+  contractorId?: string
+  freelancerId?: string
 }
 
 export interface ICreateContract {
-  project_id: string
-  application_id?: string
-  contractor_id: string
-  freelancer_id: string
+  projectId: string
+  applicationId?: string
+  contractorId: string
+  freelancerId: string
   description?: string
-  contractor_terms?: string
-  freelancer_terms?: string
-  total_amount: number
-  admin_fee?: number
-  freelancer_deposit?: number
+  contractorTerms?: string
+  freelancerTerms?: string
+  totalAmount: number
+  adminFee?: number
+  freelancerDeposit?: number
   deadline?: Date
 }
 
 export interface IUpdateContract {
   description?: string
-  contractor_terms?: string
-  freelancer_terms?: string
-  total_amount?: number
-  admin_fee?: number
-  freelancer_deposit?: number
+  contractorTerms?: string
+  freelancerTerms?: string
+  totalAmount?: number
+  adminFee?: number
+  freelancerDeposit?: number
   deadline?: Date
-  contractor_agreed?: boolean
-  freelancer_agreed?: boolean
+  contractorAgreed?: boolean
+  freelancerAgreed?: boolean
   status?: EContractStatus
 }
 
 export interface ICreateDispute {
-  contract_id: string
-  opened_by: string
+  contractId: string
+  openedBy: string
   reason?: string
 }
 
 export interface IProposeResolution {
-  resolution_type: EResolutionType
-  freelancer_amount?: number
-  contractor_amount?: number
-  new_deadline?: Date
+  resolutionType: EResolutionType
+  freelancerAmount?: number
+  contractorAmount?: number
+  newDeadline?: Date
 }
+
+export interface ISubmitContract {
+  githubLink?: string
+  webLink?: string
+}
+

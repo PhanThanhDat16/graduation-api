@@ -14,7 +14,7 @@
  *       properties:
  *         _id:
  *           type: string
- *         user_id:
+ *         userId:
  *           type: string
  *         balance:
  *           type: number
@@ -46,29 +46,29 @@
  *       properties:
  *         _id:
  *           type: string
- *         wallet_id:
+ *         walletId:
  *           type: string
  *         amount:
  *           type: number
  *         type:
  *           type: string
  *           enum: [deposit, withdraw, escrow_deposit, escrow_release, refund, admin_fee]
- *         method_payment:
+ *         methodPayment:
  *           type: string
  *           enum: [momo, vnpay, wallet]
  *         status:
  *           type: string
  *           enum: [pending, completed, failed, cancelled]
- *         user_id:
+ *         userId:
  *           type: string
- *         contract_id:
+ *         contractId:
  *           type: string
  *           description: Contract ID if transaction is related to a contract
- *         payer_type:
+ *         payerType:
  *           type: string
  *           enum: [contractor, freelancer, admin]
  *           description: Who made this payment (for contract transactions)
- *         payment_order_id:
+ *         paymentOrderId:
  *           type: string
  *           description: Payment order ID if transaction is related to a payment order
  *         description:
@@ -99,12 +99,12 @@
  *               type: number
  *     DepositRequest:
  *       type: object
- *       required: [amount, method_payment]
+ *       required: [amount, methodPayment]
  *       properties:
  *         amount:
  *           type: number
  *           example: 100000
- *         method_payment:
+ *         methodPayment:
  *           type: string
  *           enum: [momo, vnpay, wallet]
  *           example: momo
@@ -129,7 +129,7 @@
  *           type: string
  *         avatar:
  *           type: string
- *     AccountDataResponseInWithdraw:
+ *     AccountBankDataResponseInWithdraw:
  *       type: object
  *       properties:
  *         _id:
@@ -160,8 +160,8 @@
  *       properties:
  *         _id:
  *           type: string
- *         account_id:
- *           $ref: '#/components/schemas/AccountDataResponseInWithdraw'
+ *         accountId:
+ *           $ref: '#/components/schemas/AccountBankDataResponseInWithdraw'
  *         amount:
  *           type: number
  *         amountReceived:
@@ -169,12 +169,12 @@
  *         status:
  *           type: string
  *           enum: [pending, approved, rejected, paid]
- *         admin_id:
+ *         adminId:
  *           type: string
  *         createdAt:
  *           type: string
  *           format: date-time
- *         processed_at:
+ *         processedAt:
  *           type: string
  *           format: date-time
  *     WithdrawRequestResponse:
@@ -208,7 +208,7 @@
  *       type: object
  *       required: [amount]
  *       properties:
- *         account_id:
+ *         accountId:
  *           type: string
  *           example: 68f5a7b9c1d2e3f4a5b6c7d8
  *         amount:
@@ -229,7 +229,7 @@
  *         amount:
  *           type: number
  *           example: 100000
- *         method_payment:
+ *         methodPayment:
  *           type: string
  *           enum: [momo, vnpay, wallet]
  *           example: wallet
@@ -238,7 +238,7 @@
  *       properties:
  *         _id:
  *           type: string
- *         user_id:
+ *         userId:
  *           type: object
  *           properties:
  *             _id:
@@ -341,7 +341,7 @@
  *             schema:
  *               $ref: '#/components/schemas/DepositResponse'
  *       400:
- *         description: Amount must be greater than 0 / Valid method_payment is required
+ *         description: Amount must be greater than 0 / Valid methodPayment is required
  *       401:
  *         description: Unauthorized
  */
@@ -371,7 +371,7 @@
  *           type: string
  *           enum: [deposit, withdraw, escrow_deposit, escrow_release, refund, admin_fee]
  *       - in: query
- *         name: method_payment
+ *         name: methodPayment
  *         schema:
  *           type: string
  *           enum: [momo, vnpay, wallet]
@@ -504,7 +504,7 @@
  *           type: string
  *           enum: [pending, approved, rejected, paid]
  *       - in: query
- *         name: user_id
+ *         name: userId
  *         schema:
  *           type: string
  *     responses:
@@ -635,7 +635,7 @@
  *           type: integer
  *           default: 10
  *       - in: query
- *         name: user_id
+ *         name: userId
  *         schema:
  *           type: string
  *         description: Filter by specific user ID

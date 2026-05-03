@@ -22,7 +22,7 @@ export const EmailOtp = mongoose.model<IEmailOtp>('EmailOtp', emailOtpSchema)
 
 export interface IEmailOtp extends Document {
   email: string
-  purpose: 'register' | 'forgot_password'
+  purpose: 'register' | 'forgot_password' | 'change_email'
   otpHash: string
   attempts: number
   expiresAt: Date

@@ -78,6 +78,33 @@ const getMembers = expressAsyncHandler(async (req: RequestWithUser, res: Respons
 })
 
 /**
+ * Get paginated messages for guest (no auth required)
+ */
+const getGuestMessages = expressAsyncHandler(async (req: Request, res: Response) => {
+  const groupId = req.params.groupId as string
+  const page = Number(req.query.page) || 1
+  const limit = Number(req.query.limit) || 20
+
+  try {
+    const result = await chatService.getGuestMessagesPaginated(groupId, page, limit)
+    res.status(HttpStatus.OK).json({
+      message: 'OK',
+      data: result.data,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      }
+    })
+  } catch (err) {
+    if (!handleServiceError(err, res)) {
+      throw err
+    }
+  }
+})
+
+/**
  * Save message - Unified endpoint for both guests and authenticated users
  * For guests: Only requires content and guestName
  * For authenticated users: Only requires content and userId (in body)
@@ -87,11 +114,11 @@ const getMembers = expressAsyncHandler(async (req: RequestWithUser, res: Respons
 type SaveMessageReq = Request<
   { groupId: string },
   object,
-  { content: string; userId?: string; guestName?: string; type?: string }
+  { content: string; userId?: string; guestName?: string; senderType?: string; type?: string }
 >
 const createMessage = expressAsyncHandler(async (req: SaveMessageReq, res: Response) => {
   const { groupId } = req.params
-  const { content, userId, guestName, type } = req.body
+  const { content, userId, guestName, senderType, type } = req.body // Added senderType to destructuring
 
   if (!groupId) {
     res.status(HttpStatus.BAD_REQUEST).json({ message: 'groupId is required' })
@@ -115,6 +142,7 @@ const createMessage = expressAsyncHandler(async (req: SaveMessageReq, res: Respo
     const message = await chatService.saveMessage(groupId as string, content.trim(), {
       userId: userId,
       guestName: guestName?.trim(),
+      senderType: senderType, // Default senderType to 'user'
       type: type || 'text'
     })
 
@@ -135,6 +163,7 @@ const createMessage = expressAsyncHandler(async (req: SaveMessageReq, res: Respo
 
 export const chatController = {
   getMessages,
+  getGuestMessages,
   getMembers,
   createMessage
 }
