@@ -29,8 +29,8 @@ interface ContractTransactionOptions {
 
 // const WALLET_FIELDS = '_id userId balance createdAt updatedAt'
 const TRANSACTION_FIELDS =
-  '_id wallet_id amount type method_payment status user_id contract_id payer_type payment_order_id description createdAt'
-const WITHDRAW_REQUEST_FIELDS = '_id account_id amount amountReceived status staffId createdAt processed_at'
+  '_id walletId amount type methodPayment status userId contractId payerType paymentOrderId description createdAt'
+const WITHDRAW_REQUEST_FIELDS = '_id accountId amount amountReceived status staffId createdAt processed_at'
 
 // Get or create wallet for user
 const getOrCreateWallet = async (userId: string) => {
@@ -456,8 +456,8 @@ const createWithdrawRequest = async (userId: string, amount: number, accountId: 
     throw new Error('You already have a pending withdraw request')
   }
 
-  const fee = amount * 0.02;
-  const amountReceived = amount - fee;
+  const fee = amount * 0.02
+  const amountReceived = amount - fee
 
   const request = await WithdrawRequest.create({
     accountId: new mongoose.Types.ObjectId(accountId),
@@ -543,27 +543,26 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
 
   // Find the account and populate the user
   const account = await AccountBank.findById(request.accountId).populate('userId')
-  
+
   // type guard for user
   if (!account || !account.userId) {
     throw new Error('User not found')
   }
 
-  const senderName = "FREEWORK";
-  const senderAccount = "929686868668";
-  const senderBank = "MBBANK";
+  const senderName = 'FREEWORK'
+  const senderAccount = '929686868668'
+  const senderBank = 'MBBANK'
 
-  const email = (account.userId as any).email;
-  const accountName = account.accountName;
-  const accountNumber = account.accountNumber;
-  const bankName = account.bankShortName;
-  const amountRequest = request.amount;
-  const amountReceived = request.amountReceived;
-  const fee = amountRequest * 0.02;
-  const requestId_withdraw = request._id.toString();
+  const email = (account.userId as any).email
+  const accountName = account.accountName
+  const accountNumber = account.accountNumber
+  const bankName = account.bankShortName
+  const amountRequest = request.amount
+  const amountReceived = request.amountReceived
+  const fee = amountRequest * 0.02
+  const requestId_withdraw = request._id.toString()
 
-
-  const time = new Date().toLocaleString("vi-VN");
+  const time = new Date().toLocaleString('vi-VN')
 
   const requestUserId = (request.accountId as any)?.userId
   if (!requestUserId) throw new Error('Account owner not found')
@@ -572,22 +571,22 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
     senderName,
     senderAccount,
     senderBank,
-    recipientName:    accountName,
+    recipientName: accountName,
     recipientAccount: accountNumber,
-    recipientBank:    bankName,
-    transactionId:    request._id.toString(),
-    amount:           amountRequest,
+    recipientBank: bankName,
+    transactionId: request._id.toString(),
+    amount: amountRequest,
     amountReceived,
     fee,
-    note:             `${senderName} chuyen tien`,
+    note: `${senderName} chuyen tien`,
     time,
-    requestId:        requestId_withdraw,
-  });
+    requestId: requestId_withdraw
+  })
 
   const mailOptions = {
     from: `"FreeWork" <${process.env.AUTH_EMAIL}>`,
     to: email,
-    subject: "Biên Lai Thanh Toán",
+    subject: 'Biên Lai Thanh Toán',
     html: htmlResult
   }
 

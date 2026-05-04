@@ -33,7 +33,7 @@
  *       properties:
  *         _id:
  *           type: string
- *         full_name:
+ *         fullName:
  *           type: string
  *         avatar:
  *           type: string

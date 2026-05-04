@@ -129,10 +129,7 @@ const getMyContracts = async (userId: string, query: PaginationQuery & ContractF
   }
 
   const filter: any = {
-    $or: [
-      { contractorId: new mongoose.Types.ObjectId(userId) },
-      { freelancerId: new mongoose.Types.ObjectId(userId) }
-    ]
+    $or: [{ contractorId: new mongoose.Types.ObjectId(userId) }, { freelancerId: new mongoose.Types.ObjectId(userId) }]
   }
 
   if (query.status) filter.status = query.status
@@ -184,7 +181,7 @@ const updateContract = async (contractId: string, userId: string, data: IUpdateC
     }
   }
 
-  // Freelancer chỉ có thể update freelancer_terms
+  // Freelancer chỉ có thể update freelancerTerms
   if (isFreelancer && data.freelancerTerms !== undefined) {
     updateData.freelancerTerms = data.freelancerTerms
     updateData.contractorAgreed = false
@@ -317,9 +314,7 @@ const payForContract = async (contractId: string, userId: string) => {
 
   // Check if both paid (hoặc freelancer không cần pay)
   const freelancerNeedsPay = paymentAmounts.freelancerAmount > 0
-  const bothPaid = isContractor
-    ? (!freelancerNeedsPay || contract.freelancerPaid)
-    : contract.contractorPaid
+  const bothPaid = isContractor ? !freelancerNeedsPay || contract.freelancerPaid : contract.contractorPaid
 
   if (bothPaid) {
     updateData.status = EContractStatus.RUNNING
@@ -334,7 +329,11 @@ const payForContract = async (contractId: string, userId: string) => {
 }
 
 // Submit contract (freelancer hoàn thành công việc)
-const submitContract = async (contractId: string, freelancerId: string, submitData?: { githubLink?: string; webLink?: string }) => {
+const submitContract = async (
+  contractId: string,
+  freelancerId: string,
+  submitData?: { githubLink?: string; webLink?: string }
+) => {
   if (!mongoose.Types.ObjectId.isValid(contractId)) {
     throw new Error('Invalid contract ID format')
   }
@@ -364,11 +363,7 @@ const submitContract = async (contractId: string, freelancerId: string, submitDa
     updateData.webLink = submitData.webLink
   }
 
-  const updatedContract = await Contract.findByIdAndUpdate(
-    contractId,
-    updateData,
-    { new: true }
-  ).lean()
+  const updatedContract = await Contract.findByIdAndUpdate(contractId, updateData, { new: true }).lean()
 
   return updatedContract
 }
@@ -392,16 +387,11 @@ const completeContract = async (contractId: string, contractorId: string) => {
 
   // 1. Release totalAmount cho freelancer
   const releaseAmount = contract.totalAmount
-  await walletService.escrowRelease(
-    contract.freelancerId.toString(),
-    releaseAmount,
-    contract.contractorId.toString(),
-    {
-      contractId: contractId,
-      payerType: EPayerType.FREELANCER,
-      description: 'Contract completed - payment release'
-    }
-  )
+  await walletService.escrowRelease(contract.freelancerId.toString(), releaseAmount, contract.contractorId.toString(), {
+    contractId: contractId,
+    payerType: EPayerType.FREELANCER,
+    description: 'Contract completed - payment release'
+  })
 
   // 2. Hoàn lại freelancerDeposit nếu có
   const freelancerDepositRefund = contract.freelancerPaidAmount || 0

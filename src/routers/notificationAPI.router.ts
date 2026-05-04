@@ -15,7 +15,7 @@ router.delete('/:id', requireAuth, notificationController.deleteNotification)
 // Admin routes
 router.get('/', requireAuth, notificationController.getAllNotifications)
 router.get('/:id', requireAuth, notificationController.getNotificationById)
-router.get('/user/:user_id', requireAuth, notificationController.getNotificationsByUserId)
+router.get('/user/:userId', requireAuth, notificationController.getNotificationsByUserId)
 router.post('/', requireAuth, notificationController.createNotification)
 router.post('/bulk', requireAuth, notificationController.createManyNotifications)
 

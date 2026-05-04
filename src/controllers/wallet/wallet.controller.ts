@@ -5,7 +5,6 @@ import { HttpStatus } from '@/constants/http.constants'
 import { walletService } from '@/services/wallet/wallet.service'
 import { RequestWithUser } from '@/middlewares/auth.middlewares'
 import { EPaymentMethod, EWithdrawStatus } from '@/constants/wallet.constants'
-import { get } from 'axios'
 
 // Get my wallet balance
 const getMyBalance = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
@@ -189,7 +188,7 @@ const getAllWithdrawRequests = expressAsyncHandler(async (req: Request, res: Res
 // Admin: Process withdraw request
 const processWithdrawRequest = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
   const staffId = req.user?._id
-  const role = req.user?.role;
+  const role = req.user?.role
   const id = req.params.id as string
   const { status } = req.body
 

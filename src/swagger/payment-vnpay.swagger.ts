@@ -50,7 +50,7 @@
  *               example: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=10000000&..."
  *             vnp_TxnRef:
  *               type: string
- *               description: Unique transaction reference (payment_order_id)
+ *               description: Unique transaction reference (paymentOrderId)
  *               example: "TRANS-1775225730486-2d7a323c"
  *             amount:
  *               type: number
@@ -125,7 +125,7 @@
  *         data:
  *           type: object
  *           properties:
- *             payment_order_id:
+ *             paymentOrderId:
  *               type: string
  *               example: "TRANS-1775225730486-2d7a323c"
  *             amount:
@@ -269,7 +269,7 @@
  *         schema:
  *           type: string
  *         required: true
- *         description: Transaction reference (payment_order_id)
+ *         description: Transaction reference (paymentOrderId)
  *         example: "TRANS-1775225730486-2d7a323c"
  *       - in: query
  *         name: vnp_ResponseCode
@@ -368,7 +368,7 @@
  *         schema:
  *           type: string
  *         required: true
- *         description: Transaction reference (payment_order_id)
+ *         description: Transaction reference (paymentOrderId)
  *       - in: query
  *         name: vnp_ResponseCode
  *         schema:
@@ -441,11 +441,11 @@
  * /api/payment/vnpay/query:
  *   get:
  *     summary: Query transaction status
- *     description: Retrieves the current status of a wallet transaction by its payment_order_id.
+ *     description: Retrieves the current status of a wallet transaction by its paymentOrderId.
  *     tags: [PaymentVnpay]
  *     parameters:
  *       - in: query
- *         name: payment_order_id
+ *         name: paymentOrderId
  *         schema:
  *           type: string
  *         required: true
@@ -459,7 +459,7 @@
  *             schema:
  *               $ref: "#/components/schemas/QueryTransactionVnpayResponse"
  *       400:
- *         description: Missing payment_order_id
+ *         description: Missing paymentOrderId
  *         content:
  *           application/json:
  *             schema:
@@ -470,7 +470,7 @@
  *                   example: "01"
  *                 message:
  *                   type: string
- *                   example: "Missing payment_order_id"
+ *                   example: "Missing paymentOrderId"
  *       404:
  *         description: Transaction not found
  *         content:

@@ -140,7 +140,7 @@
  *         data:
  *           type: object
  *           properties:
- *             payment_order_id:
+ *             paymentOrderId:
  *               type: string
  *               description: Unique payment order ID
  *               example: "TRANS-1775225730486-2d7a323c"
@@ -153,7 +153,7 @@
  *               enum: ["pending", "completed", "failed", "cancelled"]
  *               description: Current transaction status
  *               example: "completed"
- *             payment_request_id:
+ *             paymentRequestId:
  *               type: string
  *               description: MoMo request ID
  *               example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
@@ -295,7 +295,7 @@
  * /api/payment/momo/{orderId}:
  *   get:
  *     summary: Get transaction status by order ID
- *     description: Retrieves the current status of a wallet transaction by its payment_order_id.
+ *     description: Retrieves the current status of a wallet transaction by its paymentOrderId.
  *     tags: [PaymentMomo]
  *     parameters:
  *       - in: path
@@ -303,7 +303,7 @@
  *         schema:
  *           type: string
  *         required: true
- *         description: Transaction order ID (payment_order_id)
+ *         description: Transaction order ID (paymentOrderId)
  *         example: "TRANS-1775225730486-2d7a323c"
  *     responses:
  *       200:
