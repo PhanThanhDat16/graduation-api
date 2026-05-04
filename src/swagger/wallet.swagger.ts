@@ -616,7 +616,7 @@
 
 /**
  * @openapi
- * /api/wallets/admin/wallets:
+ * /api/wallets/admin:
  *   get:
  *     tags: [Wallet]
  *     summary: "[Admin] List all wallets"
@@ -652,7 +652,7 @@
 
 /**
  * @openapi
- * /api/wallets/admin/wallets/{userId}:
+ * /api/wallets/admin/users/{userId}:
  *   get:
  *     tags: [Wallet]
  *     summary: "[Admin] Get wallet detail by userId"
@@ -677,4 +677,133 @@
  *         description: User ID is required
  *       401:
  *         description: Unauthorized
+ */
+
+/**
+ * @openapi
+ * /api/wallets/admin/users/{userId}/transactions:
+ *   get:
+ *     tags: [Wallet]
+ *     summary: "[Admin] Get user transaction history"
+ *     description: Retrieve transaction history for a specific user. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [deposit, withdraw, escrow_deposit, escrow_release, refund, admin_fee]
+ *       - in: query
+ *         name: methodPayment
+ *         schema:
+ *           type: string
+ *           enum: [momo, vnpay, wallet]
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, completed, failed, cancelled]
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TransactionListResponse'
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @openapi
+ * /api/wallets/admin/transactions:
+ *   get:
+ *     tags: [Wallet]
+ *     summary: "[Admin] Get all transaction history"
+ *     description: Retrieve transaction history for all users. Admin only.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [deposit, withdraw, escrow_deposit, escrow_release, refund, admin_fee]
+ *       - in: query
+ *         name: methodPayment
+ *         schema:
+ *           type: string
+ *           enum: [momo, vnpay, wallet]
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, completed, failed, cancelled]
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TransactionListResponse'
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @openapi
+ * /api/wallets/admin/transactions/{transactionId}:
+ *  get:
+ *   tags: [Wallet]
+ *   summary: "[Admin] Get transaction detail by transactionId"
+ *   description: View detailed information for a specific transaction. Admin only.
+ *   security:
+ *     - bearerAuth: []
+ *   parameters:
+ *     - in: path
+ *       name: transactionId
+ *       required: true
+ *       schema:
+ *         type: string
+ *   responses:
+ *     200:
+ *       description: OK
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TransactionData'
+ *     400:
+ *       description: Transaction ID is required
+ *     401:
+ *       description: Unauthorized
  */

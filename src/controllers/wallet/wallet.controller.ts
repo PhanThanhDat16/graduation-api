@@ -5,6 +5,7 @@ import { HttpStatus } from '@/constants/http.constants'
 import { walletService } from '@/services/wallet/wallet.service'
 import { RequestWithUser } from '@/middlewares/auth.middlewares'
 import { EPaymentMethod, EWithdrawStatus } from '@/constants/wallet.constants'
+import { get } from 'axios'
 
 // Get my wallet balance
 const getMyBalance = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
@@ -229,7 +230,7 @@ const getUserWallet = expressAsyncHandler(async (req: Request, res: Response) =>
     return
   }
 
-  const wallet = await walletService.getOrCreateWallet(userId)
+  const wallet = await walletService.getWalletByUserId(userId)
 
   res.status(HttpStatus.OK).json({
     message: 'Get wallet successfully',
@@ -278,6 +279,66 @@ const getAllWallets = expressAsyncHandler(async (req: Request, res: Response) =>
   })
 })
 
+// Admin: Get all transactions
+const getAllTransactions = expressAsyncHandler(async (req: Request, res: Response) => {
+  const query = req.query
+
+  const filter: any = {
+    page: query.page ? Number(query.page) : 1,
+    limit: query.limit ? Number(query.limit) : 10,
+    type: query.type as string | undefined,
+    methodPayment: query.methodPayment as string | undefined,
+    status: query.status as string | undefined,
+    userId: query.userId as string | undefined
+  }
+
+  const result = await walletService.getAllTransactions(filter)
+
+  res.status(HttpStatus.OK).json({
+    message: 'Get transactions successfully',
+    ...result
+  })
+})
+
+// Admin: Get all transactions by userId
+const getAllTransactionsByUserId = expressAsyncHandler(async (req: Request, res: Response) => {
+  const userId = req.params.userId as string
+  const query = req.query
+
+  if (!userId) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID is required' })
+    return
+  }
+
+  const filter: any = {
+    page: query.page ? Number(query.page) : 1,
+    limit: query.limit ? Number(query.limit) : 10,
+    type: query.type as string | undefined,
+    methodPayment: query.methodPayment as string | undefined,
+    status: query.status as string | undefined,
+    userId: userId
+  }
+
+  const result = await walletService.getAllTransactions(filter)
+
+  res.status(HttpStatus.OK).json({
+    message: 'Get transactions successfully',
+    ...result
+  })
+})
+
+// Admin: Get transaction by id
+const getTransactionById = expressAsyncHandler(async (req: Request, res: Response) => {
+  const transactionId = req.params.id as string
+
+  const transaction = await walletService.getTransactionById(transactionId)
+
+  res.status(HttpStatus.OK).json({
+    message: 'Get transaction successfully',
+    data: transaction
+  })
+})
+
 export const walletController = {
   getMyBalance,
   getMyWallet,
@@ -290,5 +351,8 @@ export const walletController = {
   processWithdrawRequest,
   getUserWallet,
   adminDeposit,
-  getAllWallets
+  getAllWallets,
+  getAllTransactions,
+  getAllTransactionsByUserId,
+  getTransactionById
 }

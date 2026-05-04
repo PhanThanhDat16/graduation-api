@@ -22,7 +22,10 @@ router.get('/staff/users/:userId', requireAuth, walletController.getUserWallet)
 router.post('/staff/users/:userId/deposit', requireAuth, walletController.adminDeposit)
 
 // Admin routes (wallet overview)
-router.get('/admin/wallets', requireAuth, walletController.getAllWallets)
-router.get('/admin/wallets/:userId', requireAuth, walletController.getUserWallet)
+router.get('/admin', requireAuth, walletController.getAllWallets)
+router.get('/admin/users/:userId', requireAuth, walletController.getUserWallet)
+router.get('/admin/users/:userId/transactions', requireAuth, walletController.getAllTransactionsByUserId)
+router.get('/admin/transactions', requireAuth, walletController.getAllTransactions)
+router.get('/admin/transactions/:id', requireAuth, walletController.getTransactionById)
 
 export const routerWallet = router
