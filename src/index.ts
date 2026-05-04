@@ -1,6 +1,8 @@
 import express, { NextFunction, Request, Response } from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors'
+import dns from 'dns'
+dns.setServers(['8.8.8.8', '1.1.1.1'])
 import morgan from 'morgan'
 import http from 'http'
 import cookieParser from 'cookie-parser'

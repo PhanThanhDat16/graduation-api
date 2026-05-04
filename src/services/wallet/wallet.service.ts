@@ -62,6 +62,11 @@ const getWalletByUserId = async (userId: string) => {
 
   const wallet = await Wallet.findOne({ userId: userId }).lean()
 
+  await Wallet.populate(wallet, {
+    path: 'userId',
+    select: 'fullName email avatar role'
+  })
+
   if (!wallet) {
     throw new Error('Wallet not found')
   }
@@ -711,6 +716,56 @@ const getAllWallets = async (query: PaginationQuery & { userId?: string }) => {
   return result
 }
 
+// Get all transaction (admin)
+const getAllTransactions = async (query: PaginationQuery & WalletTransactionFilter) => {
+  const filter: any = {}
+
+  if (query.userId && mongoose.Types.ObjectId.isValid(query.userId)) {
+    const wallet = await getOrCreateWallet(query.userId)
+    filter.walletId = wallet._id
+  }
+
+  if (query.type) {
+    filter.type = query.type
+  }
+
+  if (query.methodPayment) {
+    filter.methodPayment = query.methodPayment
+  }
+
+  if (query.status) {
+    filter.status = query.status
+  }
+
+  const result = await paginate(
+    WalletTransaction,
+    filter,
+    { ...query, sortBy: 'createdAt', sortOrder: 'desc' },
+    TRANSACTION_FIELDS
+  )
+
+  await WalletTransaction.populate(result.data, [{ path: 'userId', select: 'fullName email avatar' }])
+
+  return result
+}
+
+// Get transaction by ID (admin)
+const getTransactionById = async (transactionId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(transactionId)) {
+    throw new Error('Invalid transaction ID format')
+  }
+
+  const result = await WalletTransaction.findById(transactionId).populate([
+    { path: 'userId', select: 'fullName email avatar' }
+  ])
+
+  if (!result) {
+    throw new Error('Transaction not found')
+  }
+
+  return result
+}
+
 export const walletService = {
   getOrCreateWallet,
   getWalletByUserId,
@@ -728,5 +783,7 @@ export const walletService = {
   processWithdrawRequest,
   cancelWithdrawRequest,
   getTransactionsByContractId,
+  getTransactionById,
+  getAllTransactions,
   getAllWallets
 }
