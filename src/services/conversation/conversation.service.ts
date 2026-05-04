@@ -14,13 +14,13 @@ import { ChatMember } from '@/models/chat_member.model'
 import { MessageRead } from '@/models/message_read.model'
 
 export interface ConversationResponse {
-  group_id: string
-  user_id: string | null
+  groupId: string
+  userId: string | null
   guestName: string | null
   createdAt: Date
 }
 
-const GROUP_TYPES = ['contract_chat', 'dispute', 'guest_support', 'user_support'] as EChatGroupType[]
+const GROUP_TYPES = ['contract_chat', 'dispute_chat', 'guest_support', 'user_support'] as EChatGroupType[]
 
 const requireValidId = (id: string, label: string): void => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -30,17 +30,17 @@ const requireValidId = (id: string, label: string): void => {
 
 const getLastReadAtForGroup = async (userId: string, groupId: string): Promise<Date | null> => {
   const agg = await MessageRead.aggregate<{ lastRead: Date | null }>([
-    { $match: { user_id: userId } },
+    { $match: { userId: userId } },
     {
       $lookup: {
         from: 'messages',
-        localField: 'message_id',
+        localField: 'messageId',
         foreignField: '_id',
         as: 'msg'
       }
     },
     { $unwind: '$msg' },
-    { $match: { 'msg.group_id': groupId } },
+    { $match: { 'msg.groupId': groupId } },
     { $group: { _id: null, lastRead: { $max: '$read_at' } } }
   ]).exec()
 
@@ -51,14 +51,14 @@ const countUnreadForGroup = async (userId: string, groupId: string): Promise<num
   const lastRead = await getLastReadAtForGroup(userId, groupId)
   if (lastRead) {
     return Message.countDocuments({
-      group_id: groupId,
-      sender_id: { $ne: userId },
+      groupId: groupId,
+      senderId: { $ne: userId },
       createdAt: { $gt: lastRead }
     })
   }
   return Message.countDocuments({
-    group_id: groupId,
-    sender_id: { $ne: userId }
+    groupId: groupId,
+    senderId: { $ne: userId }
   })
 }
 
@@ -400,7 +400,7 @@ export const conversationService = {
 
   async listAllConversations(type?: string) {
     const filter: any = {}
-    if (type && ['guest_support', 'user_support', 'contract_chat', 'dispute'].includes(type)) {
+    if (type && ['guest_support', 'user_support', 'contract_chat', 'dispute_chat'].includes(type)) {
       filter.type = type
     }
 
@@ -434,8 +434,8 @@ export const conversationService = {
 
   formatConversationResponse(chatGroup: IChatGroup): ConversationResponse {
     return {
-      group_id: chatGroup._id.toString(),
-      user_id: chatGroup.ownerId ? chatGroup.ownerId.toString() : null,
+      groupId: chatGroup._id.toString(),
+      userId: chatGroup.ownerId ? chatGroup.ownerId.toString() : null,
       guestName: chatGroup.guestName,
       createdAt: chatGroup.createdAt
     }
