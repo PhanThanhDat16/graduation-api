@@ -124,10 +124,7 @@ const submitReason = async (disputeId: string, userId: string, reason: string, r
   }
 
   // Chỉ cho phép ở PENDING_REASONS hoặc WAITING_ESCALATION
-  if (
-    dispute.status !== EDisputeStatus.PENDING_REASONS &&
-    dispute.status !== EDisputeStatus.WAITING_ESCALATION
-  ) {
+  if (dispute.status !== EDisputeStatus.PENDING_REASONS && dispute.status !== EDisputeStatus.WAITING_ESCALATION) {
     throw new Error('Cannot submit reason in current status')
   }
 
@@ -475,10 +472,7 @@ const updateChatGroupAfterResolution = async (dispute: any) => {
       type: EChatGroupType.CONTRACT_CHAT,
       disputeId: null
     })
-  } else if (
-    dispute.resolutionType === EResolutionType.CANCEL ||
-    dispute.resolutionType === EResolutionType.SPLIT
-  ) {
+  } else if (dispute.resolutionType === EResolutionType.CANCEL || dispute.resolutionType === EResolutionType.SPLIT) {
     // Trường hợp 2: Hủy hợp đồng
     // Group type → contract_chat, GIỮ disputeId (lịch sử)
     await ChatGroup.findByIdAndUpdate(group._id, {
@@ -539,7 +533,8 @@ const executeResolution = async (dispute: any) => {
       }
 
       await Contract.findByIdAndUpdate(dispute.contractId, {
-        status: dispute.resolutionType === EResolutionType.SPLIT ? EContractStatus.COMPLETED : EContractStatus.CANCELLED,
+        status:
+          dispute.resolutionType === EResolutionType.SPLIT ? EContractStatus.COMPLETED : EContractStatus.CANCELLED,
         escrowStatus: dispute.resolutionType === EResolutionType.SPLIT ? EEscrowStatus.SPLIT : EEscrowStatus.REFUNDED,
         releasedToFreelancer: dispute.freelancerAmount,
         refundedToContractor: dispute.contractorAmount,
@@ -553,12 +548,7 @@ const executeResolution = async (dispute: any) => {
 // ═══════════════════════════════════════════════════════════
 // 9. Staff resolve dispute — Trường hợp 3
 // ═══════════════════════════════════════════════════════════
-const staffResolveDispute = async (
-  disputeId: string,
-  staffId: string,
-  decision: string,
-  data: IProposeResolution
-) => {
+const staffResolveDispute = async (disputeId: string, staffId: string, decision: string, data: IProposeResolution) => {
   if (!mongoose.Types.ObjectId.isValid(disputeId)) {
     throw new Error('Invalid dispute ID format')
   }
@@ -627,7 +617,7 @@ const getDisputeById = async (disputeId: string) => {
     .populate('openedBy', '_id fullName email')
     .populate('escalatedBy', '_id fullName email')
     .populate('staffId', '_id fullName email')
-    .populate('contractId')
+    .populate({ path: 'contractId', select: '_id projectId', populate: { path: 'projectId', select: '_id title' } })
     .lean()
 
   if (!dispute) throw new Error('Dispute not found')
@@ -661,7 +651,14 @@ const getAllDisputes = async (query: PaginationQuery & DisputeFilter) => {
     }
   }
 
-  return await paginate(DisputeForm, filter, query, DISPUTE_FIELDS)
+  return await paginate(DisputeForm, filter, query, DISPUTE_FIELDS, [
+    { path: 'contractId', select: '_id projectId', populate: { path: 'projectId', select: '_id title' } },
+    { path: 'contractorId', select: '_id fullName email avatar' },
+    { path: 'freelancerId', select: '_id fullName email avatar' },
+    { path: 'openedBy', select: '_id fullName email' },
+    { path: 'escalatedBy', select: '_id fullName email' },
+    { path: 'staffId', select: '_id fullName email' }
+  ])
 }
 
 // Get my disputes
@@ -671,10 +668,7 @@ const getMyDisputes = async (userId: string, query: PaginationQuery & DisputeFil
   }
 
   const filter: any = {
-    $or: [
-      { contractorId: new mongoose.Types.ObjectId(userId) },
-      { freelancerId: new mongoose.Types.ObjectId(userId) }
-    ]
+    $or: [{ contractorId: new mongoose.Types.ObjectId(userId) }, { freelancerId: new mongoose.Types.ObjectId(userId) }]
   }
 
   if (query.status) filter.status = query.status
