@@ -30,8 +30,49 @@ export const vnpayController = {
    */
   createPayment: expressAsyncHandler(async (req: RequestWithUser, res: Response): Promise<void> => {
     try {
-      const { amount, type, method, description } = req.body
-      const userId = req.user?._id
+        const { amount, type, method, description } = req.body;
+        const userId = req.user?._id
+    
+        // Validate input
+        if(!userId){
+            res.status(HttpStatus.UNAUTHORIZED).json({
+                success: false,
+                message: "Unauthorized",
+            });
+            return;
+        }
+    
+        if (!amount || typeof amount !== "number") {
+            res.status(HttpStatus.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid request: 'amount' is required and must be a number",
+            });
+            return;
+        }
+    
+        if(!type || type !== ETransactionType.DEPOSIT){
+            res.status(HttpStatus.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid request: 'type' is required",
+            });
+            return;
+        }
+        
+        if(!method || method !== EPaymentMethod.VNPAY){
+            res.status(HttpStatus.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid request: 'method' is required",
+            });
+            return;
+        }
+    
+        if (amount < 100000) {
+            res.status(HttpStatus.BAD_REQUEST).json({
+            success: false,
+            message: "Số tiền phải lớn hơn hoặc bằng 100.000 VNĐ",
+            });
+            return;
+        }
 
       // Validate input
       if (!userId) {

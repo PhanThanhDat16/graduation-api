@@ -11,6 +11,10 @@ import {
 } from '@/constants/contract.constants'
 import { walletService } from '@/services/wallet/wallet.service'
 import { EPayerType } from '@/constants/wallet.constants'
+import { generateNotificationContractorAcceptFreelancerEmail, generateNotificationFreelancerAcceptJob } from '@/utils/email_receipt'
+import transporter from '@/config/nodemailer'
+import { userService } from '../user/user.service'
+import { projectService } from '../project/project.service'
 
 const CONTRACT_FIELDS = `
   _id projectId applicationId contractorId freelancerId
@@ -70,6 +74,31 @@ const createContract = async (data: ICreateContract) => {
     status: EContractStatus.DRAFT,
     escrowStatus: EEscrowStatus.PENDING
   })
+
+  const [inforFreelancer, inforProject] = await Promise.all([
+    userService.getUserById(data.freelancerId.toString()),
+    projectService.getProjectById(data.projectId.toString())
+  ])
+
+  const notificationForFreelancer = generateNotificationContractorAcceptFreelancerEmail({
+    projectId: inforProject._id.toString(),
+    freelancerName: inforFreelancer.fullName || "Freelancer",
+    projectName: inforProject.title, 
+    budget: data.totalAmount.toLocaleString('vi-VN') + " VND",
+    contractorName: (inforProject.contractorId as any).fullName || "Contractor",
+    contractorEmail: (inforProject.contractorId as any).email
+  })
+
+  const mailOptions = {
+    from: `"FreeWork" <${process.env.AUTH_EMAIL}>`,
+    to: inforFreelancer.email,
+    subject: "Thông báo chấp nhận hợp đồng",
+    html: notificationForFreelancer
+  }
+
+  transporter.sendMail(mailOptions as any).catch(err => {
+  console.error('Send mail error:', err)
+})
 
   return contract
 }
@@ -208,26 +237,69 @@ const agreeToContract = async (contractId: string, userId: string) => {
     throw new Error('You are not authorized to agree to this contract')
   }
 
-  if (contract.status !== EContractStatus.DRAFT && contract.status !== EContractStatus.PENDING_AGREEMENT) {
+  if (
+    contract.status !== EContractStatus.DRAFT &&
+    contract.status !== EContractStatus.PENDING_AGREEMENT
+  ) {
     throw new Error('Contract cannot be agreed in current status')
   }
 
   const updateData: any = { lastUpdatedAt: new Date() }
 
   if (isContractor) updateData.contractorAgreed = true
-  if (isFreelancer) updateData.freelancerAgreed = true
 
-  // Check if both agreed
-  const bothAgreed = (isContractor && contract.freelancerAgreed) || (isFreelancer && contract.contractorAgreed)
+  if (isFreelancer && !contract.freelancerAgreed) {
+    updateData.freelancerAgreed = true
+
+    const [inforFreelancer, inforProject] = await Promise.all([
+      userService.getUserById(contract.freelancerId.toString()),
+      projectService.getProjectById(contract.projectId.toString())
+    ])
+
+    if (!inforFreelancer?.email) {
+      console.error('Missing freelancer email:', inforFreelancer)
+    } else {
+      const freelancerNotification = generateNotificationFreelancerAcceptJob({
+        projectId: inforProject._id.toString(),
+        freelancerName: inforFreelancer.fullName || 'Freelancer',
+        projectName: inforProject.title,
+        budget: contract.totalAmount.toLocaleString('vi-VN') + ' VND',
+        contractorName: (inforProject.contractorId as any).fullName || 'Contractor',
+        freelancerEmail: inforFreelancer.email
+      })
+
+      const mailOptions = {
+        from: `"FreeWork" <${process.env.AUTH_EMAIL}>`,
+        to: (inforProject.contractorId as any).email,
+        subject: 'Thông báo chấp nhận hợp đồng',
+        html: freelancerNotification
+      }
+
+      transporter.sendMail(mailOptions as any)
+        .catch(err => {
+          console.error('Send mail error:', err)
+        })
+    }
+  }
+
+  // ✅ Check both agreed
+  const bothAgreed =
+    (isContractor && contract.freelancerAgreed) ||
+    (isFreelancer && contract.contractorAgreed)
 
   if (bothAgreed) {
     updateData.status = EContractStatus.WAITING_PAYMENT
-    updateData.deadlinePaid = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
+    updateData.deadlinePaid = new Date(Date.now() + 24 * 60 * 60 * 1000)
   } else {
     updateData.status = EContractStatus.PENDING_AGREEMENT
   }
 
-  const updatedContract = await Contract.findByIdAndUpdate(contractId, updateData, { new: true }).lean()
+  const updatedContract = await Contract.findByIdAndUpdate(
+    contractId,
+    updateData,
+    { new: true }
+  ).lean()
+
   return updatedContract
 }
 

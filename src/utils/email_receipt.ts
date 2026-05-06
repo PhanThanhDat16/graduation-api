@@ -186,6 +186,11 @@ function generatePaymentReceiptEmail({
             <td align="right">${note}</td>
           </tr>
 
+          <tr>
+            <td style="padding:10px 0;color:#64748b;">Trạng thái giao dịch</td>
+            <td style="color: #108810ff;" align="right">Thành công</td>
+          </tr>
+
         </table>
       </td>
     </tr>
@@ -207,17 +212,19 @@ function generatePaymentReceiptEmail({
 }
 
 function generateNotificationContractorAcceptFreelancerEmail({
+  projectId,
   freelancerName,
   projectName,
   budget,
-  clientName,
-  acceptUrl
+  contractorName,
+  contractorEmail
 }: {
+  projectId: string;
   freelancerName: string;
   projectName: string;
   budget: string;
-  clientName: string;
-  acceptUrl: string;
+  contractorName: string;
+  contractorEmail: string;
 }): string {
 
   return `
@@ -240,11 +247,11 @@ function generateNotificationContractorAcceptFreelancerEmail({
     
     <!-- HEADER -->
     <tr>
-      <td style="background:linear-gradient(135deg,#0ea5e9,#2563eb);padding:22px 24px;color:#fff;">
+      <td style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:24px 28px;color:#fff;">
         <div style="font-size:20px;font-weight:800;">
           Free<span style="color:#f59e0b;">Work</span>
         </div>
-        <div style="font-size:11px;opacity:.8;margin-top:4px;">JOB AWARD NOTIFICATION</div>
+        <div style="font-size:11px;opacity:.8;margin-top:4px;">THÔNG BÁO CHẤP NHẬN HỢP ĐỒNG</div>
       </td>
     </tr>
 
@@ -252,7 +259,7 @@ function generateNotificationContractorAcceptFreelancerEmail({
     <tr>
       <td align="center" style="padding:22px 24px 10px;">
         <div style="display:inline-block;background:#dcfce7;color:#166534;padding:8px 16px;border-radius:50px;font-weight:700;font-size:13px;">
-          🎉 Bạn đã trúng thầu!
+          🎉 Bạn đã được nhận thầu!
         </div>
         <div style="font-size:18px;font-weight:700;color:#0f172a;margin-top:12px;">
           Chúc mừng ${freelancerName}
@@ -273,12 +280,20 @@ function generateNotificationContractorAcceptFreelancerEmail({
 
               <table width="100%" style="margin-top:10px;">
                 <tr>
-                  <td style="font-size:12px;color:#64748b;">💰 Ngân sách</td>
-                  <td align="right" style="font-weight:700;">${budget}</td>
+                  <td style="font-size:12px;color:#64748b;">Mã dự án</td>
+                  <td align="right">${projectId}</td>
                 </tr>
                 <tr>
-                  <td style="font-size:12px;color:#64748b;">👤 Chủ thầu</td>
-                  <td align="right">${clientName}</td>
+                  <td style="font-size:12px;color:#64748b;">Chủ thầu</td>
+                  <td align="right">${contractorName}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:12px;color:#64748b;">Email liên hệ</td>
+                  <td align="right">${contractorEmail}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:12px;color:#64748b;">Ngân sách</td>
+                  <td align="right" style="font-weight:700;">${budget}</td>
                 </tr>
               </table>
             </td>
@@ -287,35 +302,26 @@ function generateNotificationContractorAcceptFreelancerEmail({
       </td>
     </tr>
 
-    <!-- CTA BUTTON (Bulletproof) -->
-    <tr>
-      <td align="center" style="padding:10px 24px 24px;">
-        <a href="${acceptUrl}" style="
-          display:inline-block;
-          background:#2563eb;
-          color:#ffffff;
-          padding:12px 26px;
-          font-size:14px;
-          font-weight:700;
-          border-radius:8px;
-          text-decoration:none;
-        ">
-          Nhận dự án
-        </a>
-      </td>
-    </tr>
-
     <!-- WARNING -->
     <tr>
       <td align="center" style="padding:0 24px 20px;font-size:12px;color:#64748b;">
-        ⏳ Vui lòng xác nhận trong vòng <b>48 giờ</b>, nếu không hệ thống có thể chọn freelancer khác.
+        Vui lòng truy cập vào website để ký xác nhận hợp đồng trong vòng <b>24 giờ</b>, nếu không hợp đồng sẽ tự động hủy.
+      </td>
+    </tr>
+
+    <!-- BUTTON -->
+    <tr>
+      <td align="center" style="padding:10px 24px 24px;">
+        <a href="http://localhost:3000" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:700;">
+          Truy cập website
+        </a>
       </td>
     </tr>
 
     <!-- FOOTER -->
     <tr>
       <td style="background:#0f172a;color:#94a3b8;text-align:center;padding:18px;font-size:11px;">
-        Email tự động từ FreeWork · support@freework.vn
+        Email tự động từ FreeWork · support.freework@freework.vn
       </td>
     </tr>
 
@@ -324,24 +330,25 @@ function generateNotificationContractorAcceptFreelancerEmail({
   </tr>
 </table>
 
-
 </body>
 </html>
   `;
 }
 
 function generateNotificationFreelancerAcceptJob({
+  projectId,
+  contractorName,
   freelancerName,
+  freelancerEmail,
   projectName,
-  budget,
-  clientName,
-  projectUrl
+  budget
 }: {
+  projectId: string;
+  contractorName: string;
   freelancerName: string;
+  freelancerEmail: string;
   projectName: string;
   budget: string;
-  clientName: string;
-  projectUrl: string;
 }): string {
 
   return `
@@ -361,19 +368,22 @@ function generateNotificationFreelancerAcceptJob({
       
       <!-- HEADER -->
       <tr>
-        <td style="background:linear-gradient(135deg,#16a34a,#22c55e);padding:22px 24px;color:#fff;">
+        <td style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:24px 28px;color:#fff;">
           <div style="font-size:20px;font-weight:800;">
             Free<span style="color:#f59e0b;">Work</span>
           </div>
-          <div style="font-size:11px;opacity:.8;margin-top:4px;">PROJECT CONFIRMATION</div>
+          <div style="font-size:11px;opacity:.8;margin-top:4px;">XÁC NHẬN THÔNG TIN FREELANCER</div>
         </td>
       </tr>
 
       <!-- STATUS -->
       <tr>
         <td align="center" style="padding:22px 24px;">
-          <div style="display:inline-block;background:#dcfce7;color:#166534;padding:8px 16px;border-radius:50px;font-weight:700;font-size:13px;">
-            ✅ Freelancer đã nhận dự án
+          <div style="display:block;background:#dcfce7;color:#166534;padding:8px 16px;border-radius:50px;font-weight:700;font-size:13px;">
+            Freelancer đã nhận dự án vui lòng truy cập vào link website bên dưới để tiến hành ký hợp đồng trong vòng 24 giờ
+          </div>
+          <div style="font-size:18px;font-weight:700;color:#0f172a;margin-top:12px;">
+            Xin chào ${contractorName}
           </div>
         </td>
       </tr>
@@ -391,11 +401,19 @@ function generateNotificationFreelancerAcceptJob({
 
                 <table width="100%" style="margin-top:10px;">
                   <tr>
-                    <td style="font-size:12px;color:#64748b;">👨‍💻 Freelancer</td>
+                    <td style="font-size:12px;color:#64748b;">Mã dự án</td>
+                    <td align="right">${projectId}</td>
+                  </tr>
+                  <tr>
+                    <td style="font-size:12px;color:#64748b;">Freelancer</td>
                     <td align="right" style="font-weight:700;">${freelancerName}</td>
                   </tr>
                   <tr>
-                    <td style="font-size:12px;color:#64748b;">💰 Ngân sách</td>
+                    <td style="font-size:12px;color:#64748b;">Email liên hệ</td>
+                    <td align="right">${freelancerEmail}</td>
+                  </tr>
+                  <tr>
+                    <td style="font-size:12px;color:#64748b;">Ngân sách</td>
                     <td align="right">${budget}</td>
                   </tr>
                 </table>
@@ -403,24 +421,6 @@ function generateNotificationFreelancerAcceptJob({
               </td>
             </tr>
           </table>
-        </td>
-      </tr>
-
-      <!-- CTA -->
-      <tr>
-        <td align="center" style="padding:10px 24px 24px;">
-          <a href="${projectUrl}" style="
-            display:inline-block;
-            background:#16a34a;
-            color:#ffffff;
-            padding:12px 26px;
-            font-size:14px;
-            font-weight:700;
-            border-radius:8px;
-            text-decoration:none;
-          ">
-            Xem dự án
-          </a>
         </td>
       </tr>
 
@@ -435,6 +435,15 @@ function generateNotificationFreelancerAcceptJob({
       <tr>
         <td style="background:#0f172a;color:#94a3b8;text-align:center;padding:18px;font-size:11px;">
           FreeWork · Nền tảng freelance hàng đầu
+        </td>
+      </tr>
+
+      <!-- BUTTON -->
+      <tr>
+        <td align="center" style="padding:10px 24px 24px;">
+          <a href="http://localhost:3000" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:700;">
+            Truy cập website
+          </a>
         </td>
       </tr>
 
