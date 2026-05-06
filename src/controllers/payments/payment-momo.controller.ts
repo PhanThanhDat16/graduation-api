@@ -51,10 +51,10 @@ export const paymentController = {
         return
       }
 
-      if (amount < 50000) {
+      if (amount < 100000) {
         res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
-          message: 'Amount must be at least 50,000 VND'
+          message: 'Amount must be at least 100,000 VND'
         })
         return
       }

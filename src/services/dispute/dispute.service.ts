@@ -31,7 +31,7 @@ const DISPUTE_FIELDS = `
 // ─── Helper: tìm ChatGroup contract_chat chứa cả 2 bên ───
 const findContractChatGroup = async (contractorId: string, freelancerId: string) => {
   return ChatGroup.findOne({
-    type: { $in: [EChatGroupType.CONTRACT_CHAT, EChatGroupType.DISPUTE] },
+    type: { $in: [EChatGroupType.CONTRACT_CHAT, EChatGroupType.DISPUTE_CHAT] },
     memberIds: { $all: [contractorId, freelancerId] }
   })
 }
@@ -271,7 +271,7 @@ const staffJoinDispute = async (disputeId: string, staffId: string) => {
   // Thêm staff vào group + đổi type sang dispute
   await ChatGroup.findByIdAndUpdate(group._id, {
     $set: {
-      type: EChatGroupType.DISPUTE,
+      type: EChatGroupType.DISPUTE_CHAT,
       disputeId: new mongoose.Types.ObjectId(disputeId),
       assignedStaffId: new mongoose.Types.ObjectId(staffId)
     },

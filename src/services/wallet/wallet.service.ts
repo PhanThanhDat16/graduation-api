@@ -30,7 +30,7 @@ interface ContractTransactionOptions {
 // const WALLET_FIELDS = '_id userId balance createdAt updatedAt'
 const TRANSACTION_FIELDS =
   '_id walletId amount type methodPayment status userId contractId payerType paymentOrderId description createdAt'
-const WITHDRAW_REQUEST_FIELDS = '_id accountId amount amountReceived status staffId createdAt processed_at'
+const WITHDRAW_REQUEST_FIELDS = '_id accountId amount amountReceived status staffId createdAt processedAt'
 
 // Get or create wallet for user
 const getOrCreateWallet = async (userId: string) => {
@@ -632,7 +632,7 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
       {
         status,
         staffId: new mongoose.Types.ObjectId(staffId),
-        processed_at: new Date()
+        processedAt: new Date()
       },
       { new: true, session }
     ).lean()

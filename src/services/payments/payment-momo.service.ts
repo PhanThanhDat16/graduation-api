@@ -42,12 +42,12 @@ export const paymentService = {
       throw new Error("User ID is required");
     }
 
-    if (!amount || amount < 50000) {
-      throw new Error("Amount must be at least 50,000 VND");
+    if (!amount || amount < 100000) {
+      throw new Error("Số tiền tối thiểu là 100.000 VNĐ");
     }
 
     if (!Number.isInteger(amount)) {
-      throw new Error("Amount must be an integer");
+      throw new Error("Số tiền phải là số nguyên");
     }
 
     const wallet = await walletService.getOrCreateWallet(userId)
