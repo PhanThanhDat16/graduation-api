@@ -617,7 +617,7 @@ const getDisputeById = async (disputeId: string) => {
     .populate('openedBy', '_id fullName email')
     .populate('escalatedBy', '_id fullName email')
     .populate('staffId', '_id fullName email')
-    .populate({ path: 'contractId', select: '_id projectId', populate: { path: 'projectId', select: '_id title' } })
+    .populate({ path: 'contractId', select: '', populate: { path: 'projectId', select: '_id title' } })
     .lean()
 
   if (!dispute) throw new Error('Dispute not found')
