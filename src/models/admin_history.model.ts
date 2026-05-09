@@ -37,7 +37,11 @@ const adminHistorySchema = new mongoose.Schema<IAdminHistory>(
       required: true
     }
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  {
+    versionKey: false,
+    strict: true,
+    collection: 'admin_history'
+  }
 )
 
 adminHistorySchema.index({ adminId: 1, contractId: 1, disputeId: 1 })

@@ -78,6 +78,24 @@
  *           items:
  *             type: string
  *           example: ["AWS Certified Developer"]
+ *
+ *     AIMessage:
+ *       type: object
+ *       properties:
+ *         role:
+ *           type: string
+ *           enum: [user, assistant]
+ *           example: "user"
+ *         content:
+ *           type: string
+ *           example: "Hello, I'm looking for a job."
+ *         senderName:
+ *           type: string
+ *           example: "John Doe"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2024-05-08T10:00:00Z"
  */
 
 /**
@@ -159,4 +177,85 @@
  *               $ref: '#/components/schemas/AIFreelancerData'
  *       404:
  *         description: Freelancer not found
+ *
+ * /internal/ai/groups/{groupId}/messages:
+ *   get:
+ *     tags: [AI Internal]
+ *     summary: Get conversation history for AI context
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Chat group ID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           default: 10
+ *         description: Number of messages to fetch
+ *     responses:
+ *       200:
+ *         description: List of messages for AI context
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 groupId:
+ *                   type: string
+ *                 messages:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/AIMessage'
+ *
+ *   post:
+ *     tags: [AI Internal]
+ *     summary: Save an AI-generated message to a group
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Chat group ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 example: "Sure, here are some job recommendations for you..."
+ *     responses:
+ *       200:
+ *         description: Message saved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     groupId:
+ *                       type: string
+ *                     content:
+ *                       type: string
+ *                     senderType:
+ *                       type: string
+ *                       example: "ai"
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
  */
+

@@ -20,7 +20,7 @@ export interface ConversationResponse {
   createdAt: Date
 }
 
-const GROUP_TYPES = ['contract_chat', 'dispute_chat', 'guest_support', 'user_support'] as EChatGroupType[]
+const GROUP_TYPES = ['contract_chat', 'dispute_chat', 'guest_support', 'user_support', 'ai_chat'] as EChatGroupType[]
 
 const requireValidId = (id: string, label: string): void => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -239,10 +239,30 @@ export const conversationService = {
       throw new Error('memberIds must be an array')
     }
 
-    const memberSet = new Set<string>(body.memberIds.filter((id) => mongoose.Types.ObjectId.isValid(id)))
-    memberSet.add(creatorUserId)
+    // Check if AI_CHAT: freelancer/contractor can only have 1
+    if (body.type === EChatGroupType.AI_CHAT) {
+      const creator = (await User.findById(creatorUserId).select('role').lean()) as any
+      if (creator?.role === 'freelancer' || creator?.role === 'contractor') {
+        // Check if already has AI_CHAT conversation
+        const existingAiChat = await ChatGroup.findOne({
+          ownerId: creatorUserId,
+          type: EChatGroupType.AI_CHAT
+        })
+        if (existingAiChat) {
+          throw new Error('You already have an AI chat conversation')
+        }
+      }
+    }
 
-    const memberIds = [...memberSet]
+    let memberIds: string[]
+    if (body.type === EChatGroupType.AI_CHAT) {
+      // AI chat: only creator + unique virtual AI bot ID, ignore client-provided memberIds
+      memberIds = [creatorUserId, uuidv4()]
+    } else {
+      const memberSet = new Set<string>(body.memberIds.filter((id) => mongoose.Types.ObjectId.isValid(id)))
+      memberSet.add(creatorUserId)
+      memberIds = [...memberSet]
+    }
 
     const disputeId = body.disputeId && mongoose.Types.ObjectId.isValid(body.disputeId) ? body.disputeId : undefined
 
@@ -254,7 +274,9 @@ export const conversationService = {
       lastMessage: ''
     } as any)
 
-    const membersPayload = memberIds.map((id) => ({
+    // For AI_CHAT, only create ChatMember for real users (valid ObjectIds), not the virtual AI bot UUID
+    const realMemberIds = memberIds.filter((id) => mongoose.Types.ObjectId.isValid(id))
+    const membersPayload = realMemberIds.map((id) => ({
       groupId: group._id,
       userId: id,
       role: (id === creatorUserId ? 'owner' : 'member') as EChatMemberRole
@@ -317,7 +339,36 @@ export const conversationService = {
 
     // Apply type filter if provided
     if (type) {
-      query = { $and: [query, { type }] }
+      // For AI_CHAT by staff: only show assigned or own conversations
+      if (type === EChatGroupType.AI_CHAT && isStaff) {
+        query = {
+          $and: [
+            query,
+            {
+              $or: [
+                { assignedStaffId: userId }, // Assigned to this staff
+                { ownerId: userId } // Created by this staff
+              ]
+            }
+          ]
+        }
+      } else {
+        query = { $and: [query, { type }] }
+      }
+    } else if (isStaff) {
+      // When no type filter and user is staff: filter out other staff's AI_CHAT
+      query = {
+        $and: [
+          query,
+          {
+            $or: [
+              { type: { $ne: EChatGroupType.AI_CHAT } }, // Show non-AI_CHAT
+              { assignedStaffId: userId }, // Show AI_CHAT assigned to this staff
+              { ownerId: userId } // Show AI_CHAT created by this staff
+            ]
+          }
+        ]
+      }
     }
 
     const groups = (await ChatGroup.find(query)
@@ -398,10 +449,23 @@ export const conversationService = {
     return { reassignedCount: groups.length }
   },
 
-  async listAllConversations(type?: string) {
+  async listAllConversations(userId: string, userRole: string, type?: string) {
     const filter: any = {}
-    if (type && ['guest_support', 'user_support', 'contract_chat', 'dispute_chat'].includes(type)) {
+
+    // Filter by type if provided
+    if (type && ['guest_support', 'user_support', 'contract_chat', 'dispute_chat', 'ai_chat'].includes(type)) {
       filter.type = type
+    }
+
+    // For staff: exclude AI_CHAT of other staff (only show own or assigned AI_CHAT)
+    if (userRole === 'staff') {
+      // If filtering for AI_CHAT specifically, only show owned or assigned
+      if (type === EChatGroupType.AI_CHAT) {
+        filter.$or = [{ ownerId: userId }, { assignedStaffId: userId }]
+      } else if (!type) {
+        // If no type filter: exclude other staff's AI_CHAT
+        filter.$or = [{ type: { $ne: EChatGroupType.AI_CHAT } }, { ownerId: userId }, { assignedStaffId: userId }]
+      }
     }
 
     const groups = (await ChatGroup.find(filter)

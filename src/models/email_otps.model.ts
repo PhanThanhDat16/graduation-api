@@ -14,7 +14,9 @@ const emailOtpSchema = new mongoose.Schema<IEmailOtp>(
     lastSentAt: { type: Date, required: true }
   },
   {
-    timestamps: true
+    versionKey: false,
+    strict: true,
+    collection: 'email_otps'
   }
 )
 

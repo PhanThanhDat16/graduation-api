@@ -1,6 +1,8 @@
 import { AIJobData, AIFreelancerData } from '@/constants/ai.constants'
 import { Project } from '@/models/project.model'
 import { User } from '@/models/user.model'
+import { ChatGroup } from '@/models/chat_group.model'
+import { Message } from '@/models/message.model'
 import mongoose from 'mongoose'
 
 /**
@@ -101,9 +103,81 @@ const getFreelancerByIdForAI = async (userId: string): Promise<AIFreelancerData 
   return transformUserToAIFreelancer(user)
 }
 
+/**
+ * Get the last N messages of a group, simplified for AI context.
+ * No auth check — internal AI service only.
+ */
+const getMessagesForAI = async (groupId: string, limit: number = 10) => {
+  if (!mongoose.Types.ObjectId.isValid(groupId)) {
+    return null
+  }
+
+  const group = await ChatGroup.findById(groupId).lean()
+  if (!group) {
+    return null
+  }
+
+  const raw = await Message.find({ groupId })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate('senderId', 'fullName')
+    .lean()
+
+  // Return newest-first reversed to chronological order
+  const messages = raw.reverse().map((m: any) => ({
+    role: m.senderType === 'ai' ? 'assistant' : 'user',
+    content: m.content,
+    senderName: m.senderId?.fullName || m.senderName || 'Unknown',
+    createdAt: m.createdAt
+  }))
+
+  return { groupId, messages }
+}
+
+/**
+ * Save an AI-generated message into the group.
+ * Uses senderType='ai' with no senderId.
+ */
+const createMessageForAI = async (groupId: string, content: string) => {
+  if (!mongoose.Types.ObjectId.isValid(groupId)) {
+    throw new Error('Invalid group ID')
+  }
+
+  const group = await ChatGroup.findById(groupId)
+  if (!group) {
+    throw new Error('Group not found')
+  }
+
+  const message = await Message.create({
+    groupId,
+    senderId: null,
+    senderType: 'ai',
+    senderName: 'AI Assistant',
+    type: 'text',
+    content
+  } as any)
+
+  // Update chat_group last message
+  await ChatGroup.findByIdAndUpdate(groupId, {
+    lastMessage: content,
+    lastMessageAt: new Date(),
+    lastSenderId: null
+  })
+
+  return {
+    _id: message._id.toString(),
+    groupId: groupId,
+    content: message.content,
+    senderType: 'ai',
+    createdAt: message.createdAt
+  }
+}
+
 export const aiService = {
   getJobsForAI,
   getJobByIdForAI,
   getFreelancersForAI,
-  getFreelancerByIdForAI
+  getFreelancerByIdForAI,
+  getMessagesForAI,
+  createMessageForAI
 }

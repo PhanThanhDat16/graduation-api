@@ -15,7 +15,7 @@ const walletTransactionSchema = new mongoose.Schema(
     payerType: { type: String, enum: EPayerType },
 
     // Payment gateway fields from momo
-    paymentOrderId: { type: String},
+    paymentOrderId: { type: String },
     paymentRequestId: { type: String },
     paymentOrderInfo: { type: String },
 
@@ -29,7 +29,7 @@ const walletTransactionSchema = new mongoose.Schema(
   {
     versionKey: false,
     strict: true,
-    timestamps: { createdAt: true, updatedAt: true }
+    collection: 'wallet_transactions'
   }
 )
 

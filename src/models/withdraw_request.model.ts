@@ -5,7 +5,7 @@ const withdrawRequestSchema = new mongoose.Schema(
   {
     accountId: { type: mongoose.Schema.Types.ObjectId, ref: 'AccountBank', required: true },
     amount: { type: Number, required: true, min: 0 },
-    amountReceived: { type: Number, required: true, min: 0},
+    amountReceived: { type: Number, required: true, min: 0 },
     status: { type: String, enum: EWithdrawStatus, default: 'pending' },
     staffId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     processedAt: { type: Date, default: null }
@@ -13,7 +13,7 @@ const withdrawRequestSchema = new mongoose.Schema(
   {
     versionKey: false,
     strict: true,
-    timestamps: { createdAt: true, updatedAt: false }
+    collection: 'withdraw_requests'
   }
 )
 
