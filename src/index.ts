@@ -34,6 +34,7 @@ import { routerChat } from './routers/chatAPI.router'
 import { routerConversation } from './routers/conversationAPI.router'
 import { routerAI } from './routers/aiAPI.router'
 import { routerUpload } from './routers/uploadAPI.router'
+import { routerDashboard } from './routers/dashboardAPI.router'
 
 dotenv.config()
 
@@ -112,6 +113,7 @@ app.use('/api/conversations', routerConversation)
 app.use('/internal/ai', routerAI)
 
 app.use('/api/upload', routerUpload)
+app.use('/api/dashboard', routerDashboard)
 
 // Initialize Auth Google
 app.use(passport.initialize())

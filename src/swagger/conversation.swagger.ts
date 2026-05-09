@@ -354,7 +354,7 @@
  *         name: type
  *         schema:
  *           type: string
- *           enum: [guest_support, user_support, contract_chat, dispute]
+ *           enum: [guest_support, user_support, contract_chat, dispute, ai_chat]
  *         description: Filter conversations by type (optional, returns all if omitted)
  *     responses:
  *       200:
@@ -385,7 +385,7 @@
  *                         nullable: true
  *                       type:
  *                         type: string
- *                         enum: [guest_support, user_support, contract_chat, dispute]
+ *                         enum: [guest_support, user_support, contract_chat, dispute, ai_chat]
  *                       disputeId:
  *                         type: string
  *                         nullable: true

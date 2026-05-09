@@ -49,9 +49,61 @@ const getFreelancerById = expressAsyncHandler(async (req: Request, res: Response
   res.status(HttpStatus.OK).json(freelancer)
 })
 
+/**
+ * Get last N messages of a group for AI context (no auth).
+ * GET /internal/ai/groups/:groupId/messages?limit=10
+ */
+const getMessages = expressAsyncHandler(async (req: Request, res: Response) => {
+  const groupId = req.params.groupId as string
+  const limit = Number(req.query.limit) || 10
+
+  const result = await aiService.getMessagesForAI(groupId, limit)
+
+  if (!result) {
+    res.status(HttpStatus.NOT_FOUND).json({
+      message: 'Group not found'
+    })
+    return
+  }
+
+  res.status(HttpStatus.OK).json(result)
+})
+
+/**
+ * Save an AI-generated message into a group.
+ * POST /internal/ai/groups/:groupId/messages
+ * Body: { content: string }
+ */
+const createMessage = expressAsyncHandler(async (req: Request, res: Response) => {
+  const groupId = req.params.groupId as string
+  const { content } = req.body
+
+  if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'content is required and must be non-empty string'
+    })
+    return
+  }
+
+  try {
+    const message = await aiService.createMessageForAI(groupId, content.trim())
+    res.status(HttpStatus.OK).json({
+      message: 'AI message saved successfully',
+      data: message
+    })
+  } catch (error) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: error instanceof Error ? error.message : 'Failed to save AI message'
+    })
+  }
+})
+
 export const aiController = {
   getJobs,
   getJobById,
   getFreelancers,
-  getFreelancerById
+  getFreelancerById,
+  getMessages,
+  createMessage
 }
+

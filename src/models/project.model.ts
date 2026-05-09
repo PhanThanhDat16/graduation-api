@@ -13,7 +13,7 @@ const projectSchema = new mongoose.Schema(
     images: { type: [String], default: [] },
     status: { type: String, enum: EProjectStatus, default: 'draft' },
     likes: { type: Number, default: 0 },
-    listLike: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },
+    listLike: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] }
   },
   { timestamps: true }
 )

@@ -230,7 +230,7 @@ const listAllConversations = expressAsyncHandler(async (req: RequestWithUser, re
 
   try {
     const type = req.query.type as string | undefined
-    const data = await conversationService.listAllConversations(type)
+    const data = await conversationService.listAllConversations(userId, userRole as string, type)
     res.status(HttpStatus.OK).json({
       message: 'OK',
       data

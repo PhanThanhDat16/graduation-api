@@ -4,6 +4,7 @@ import { ChatMember } from '@/models/chat_member.model'
 import { Message } from '@/models/message.model'
 import {
   EChatMemberRole,
+  EChatGroupType,
   GroupMemberRow,
   EMessageType,
   MessageWithRelations,
@@ -12,6 +13,9 @@ import {
 } from '@/constants/chat.constants'
 import { ChatGroup } from '@/models/chat_group.model'
 import { User } from '@/models/user.model'
+
+/** Group types where any staff can auto-join */
+const STAFF_ACCESSIBLE_TYPES = ['guest_support', 'user_support', 'contract_chat', 'dispute_chat']
 
 const requireValidId = (id: string, label: string): void => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -36,6 +40,46 @@ const ensureMember = async (groupId: string, userId: string): Promise<void> => {
   if (!member) {
     throw new Error('You are not a member of this group')
   }
+}
+
+/**
+ * For staff users accessing support/contract conversations:
+ * auto-join them as a member instead of blocking access.
+ * All staff can view and participate in these conversations.
+ */
+const ensureMemberOrAutoJoinStaff = async (groupId: string, userId: string): Promise<void> => {
+  requireValidId(groupId, 'group id')
+  requireValidId(userId, 'user id')
+
+  // Check if already a member
+  const existingMember = await ChatMember.findOne({ groupId: groupId, userId: userId }).lean()
+  if (existingMember) return
+
+  // Check if this user is staff AND the group is a staff-accessible type
+  const [user, group] = await Promise.all([
+    User.findById(userId).select('role').lean() as any,
+    ChatGroup.findById(groupId).select('type').lean() as any
+  ])
+
+  if (user?.role === 'staff' && group && STAFF_ACCESSIBLE_TYPES.includes(group.type)) {
+    // Auto-join: add staff to ChatMember and memberIds
+    await ChatMember.updateOne(
+      { groupId: groupId, userId: new mongoose.Types.ObjectId(userId) },
+      {
+        $setOnInsert: {
+          groupId: groupId,
+          userId: new mongoose.Types.ObjectId(userId),
+          role: EChatMemberRole.MEMBER
+        }
+      },
+      { upsert: true }
+    )
+    await ChatGroup.updateOne({ _id: groupId }, { $addToSet: { memberIds: userId } })
+    return
+  }
+
+  // Not staff or not a staff-accessible group type → block access
+  throw new Error('You are not a member of this group')
 }
 
 const formatReply = (reply: unknown): ReplyPreview | null => {
@@ -80,6 +124,31 @@ const toMessageWithRelations = (doc: unknown): MessageWithRelations => {
 export const chatService = {
   async getMessagesPaginated(userId: string, groupId: string, page: number, limit: number) {
     requireValidId(groupId, 'group id')
+    requireValidId(userId, 'user id')
+
+    // Verify user has access to this group
+    const group = (await ChatGroup.findById(groupId).lean()) as any
+    if (!group) {
+      throw new Error('Group not found')
+    }
+
+    // For AI_CHAT: staff can only access own or assigned conversations
+    if (group.type === EChatGroupType.AI_CHAT) {
+      const user = (await User.findById(userId).select('role').lean()) as any
+      if (user?.role === 'staff') {
+        const isOwner = group.ownerId?.toString() === userId
+        const isAssigned = group.assignedStaffId?.toString() === userId
+        if (!isOwner && !isAssigned) {
+          throw new Error('You do not have access to this AI chat')
+        }
+      } else {
+        // Non-staff users must be a member of the group
+        await ensureMember(groupId, userId)
+      }
+    } else {
+      // For non-AI_CHAT groups: verify membership (staff auto-joins support/contract groups)
+      await ensureMemberOrAutoJoinStaff(groupId, userId)
+    }
 
     const safePage = Math.max(1, page)
     const safeLimit = Math.min(100, Math.max(1, limit))
@@ -158,7 +227,7 @@ export const chatService = {
   },
 
   async listMembers(userId: string, groupId: string): Promise<GroupMemberRow[]> {
-    await ensureMember(groupId, userId)
+    await ensureMemberOrAutoJoinStaff(groupId, userId)
     requireValidId(groupId, 'group id')
 
     const rows = (await ChatMember.find({ groupId: groupId }).sort({ joinedAt: 1 }).lean()) as any[]
@@ -197,6 +266,18 @@ export const chatService = {
       throw new Error('Conversation not found')
     }
 
+    // For AI_CHAT: staff can only send message to own or assigned conversations
+    if (conversation.type === EChatGroupType.AI_CHAT && userId) {
+      const user = (await User.findById(userId).select('role').lean()) as any
+      if (user?.role === 'staff') {
+        const isOwner = conversation.ownerId?.toString() === userId
+        const isAssigned = conversation.assignedStaffId?.toString() === userId
+        if (!isOwner && !isAssigned) {
+          throw new Error('You do not have access to this AI chat')
+        }
+      }
+    }
+
     const isSupport = ['guest_support', 'user_support', 'contract_chat'].includes(conversation.type)
 
     // Staff auto-assign and auto-join for support/contract conversations
@@ -214,10 +295,7 @@ export const chatService = {
           )
         } else {
           // Any staff can reply — just ensure they are added to the group
-          await ChatGroup.updateOne(
-            { _id: conversation._id },
-            { $addToSet: { memberIds: userId } }
-          )
+          await ChatGroup.updateOne({ _id: conversation._id }, { $addToSet: { memberIds: userId } })
         }
         // Add staff as ChatMember if not already
         await ChatMember.updateOne(
@@ -270,27 +348,27 @@ export const chatService = {
       groupId: doc.groupId.toString(),
       senderId: doc.senderId
         ? {
-          _id: doc.senderId._id.toString(),
-          fullName: doc.senderId.fullName ?? '',
-          avatar: doc.senderId.avatar ?? ''
-        }
+            _id: doc.senderId._id.toString(),
+            fullName: doc.senderId.fullName ?? '',
+            avatar: doc.senderId.avatar ?? ''
+          }
         : null,
       senderType: doc.senderType,
       type: doc.type,
       content: doc.content,
       replyTo: doc.replyTo
         ? {
-          _id: doc.replyTo._id.toString(),
-          content: doc.replyTo.content,
-          senderId: doc.replyTo.senderId
-            ? {
-              _id: doc.replyTo.senderId._id.toString(),
-              fullName: doc.replyTo.senderId.fullName ?? '',
-              avatar: doc.replyTo.senderId.avatar ?? ''
-            }
-            : null,
-          createdAt: doc.replyTo.createdAt
-        }
+            _id: doc.replyTo._id.toString(),
+            content: doc.replyTo.content,
+            senderId: doc.replyTo.senderId
+              ? {
+                  _id: doc.replyTo.senderId._id.toString(),
+                  fullName: doc.replyTo.senderId.fullName ?? '',
+                  avatar: doc.replyTo.senderId.avatar ?? ''
+                }
+              : null,
+            createdAt: doc.replyTo.createdAt
+          }
         : null,
       createdAt: doc.createdAt
     }

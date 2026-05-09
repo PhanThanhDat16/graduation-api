@@ -41,6 +41,14 @@ export function setupSocket(server: http.Server): void {
       io.to('staff_room_general').emit('new_conversation')
     })
 
+    // USER CREATES SUPPORT CONVERSATION → notify staff
+    socket.on('user_new_conversation', (data) => {
+      const { groupId } = data
+      const room = chatRoomForGroup(groupId)
+      socket.join(room)
+      io.to('staff_room_general').emit('new_conversation')
+    })
+
     socket.on('disconnect', (reason) => {
       console.log(`[Socket] User disconnected: ${socket.id} - Reason: ${reason}`)
     })

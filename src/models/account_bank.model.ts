@@ -51,7 +51,7 @@ const accountBankSchema = new mongoose.Schema(
   {
     versionKey: false,
     strict: true,
-    timestamps: true
+    collection: 'account_banks'
   }
 )
 
