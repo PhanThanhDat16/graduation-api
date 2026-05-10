@@ -49,6 +49,29 @@ const getFreelancerById = expressAsyncHandler(async (req: Request, res: Response
   res.status(HttpStatus.OK).json(freelancer)
 })
 
+const getContractors = expressAsyncHandler(async (req: Request, res: Response) => {
+  const contractors = await aiService.getContractorsForAI()
+
+  res.status(HttpStatus.OK).json({
+    contractors
+  })
+})
+
+const getContractorById = expressAsyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string
+
+  const contractor = await aiService.getContractorByIdForAI(id)
+
+  if (!contractor) {
+    res.status(HttpStatus.NOT_FOUND).json({
+      message: 'Contractor not found'
+    })
+    return
+  }
+
+  res.status(HttpStatus.OK).json(contractor)
+})
+
 /**
  * Get last N messages of a group for AI context (no auth).
  * GET /internal/ai/groups/:groupId/messages?limit=10
@@ -103,7 +126,8 @@ export const aiController = {
   getJobById,
   getFreelancers,
   getFreelancerById,
+  getContractors,
+  getContractorById,
   getMessages,
   createMessage
 }
-

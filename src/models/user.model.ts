@@ -17,8 +17,8 @@ const userSchema = new mongoose.Schema(
     status: { type: String, enum: ['active', 'inactive', 'banned'], default: 'active' },
     role: { type: String, enum: ['freelancer', 'contractor', 'staff', 'admin', 'other'], default: 'other' },
 
-    ratingAvg: { type: Number, default: null },
-    ratingCount: { type: Number, default: null },
+    ratingAvg: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
     contractFavourite: { type: [String], default: null },
 
     provider: { type: String, default: 'local' },

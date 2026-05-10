@@ -22,7 +22,7 @@ export interface AIFreelancerData {
   fullName: string
   description: string
   role: string
-  ratingAvg: number | null
-  ratingCount: number | null
+  ratingAvg: number
+  ratingCount: number
   status: string
 }

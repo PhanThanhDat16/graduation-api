@@ -23,7 +23,7 @@ const transformProjectToAIJob = (project: any): AIJobData => ({
 })
 
 /**
- * Transform a raw user document into the AI-expected freelancer format.
+ * Transform a raw user document into the AI-expected freelancer/contractor format.
  * Returns raw fields without fabrication.
  */
 const transformUserToAIFreelancer = (user: any): AIFreelancerData => ({
@@ -31,8 +31,8 @@ const transformUserToAIFreelancer = (user: any): AIFreelancerData => ({
   fullName: user.fullName || '',
   description: user.description || '',
   role: user.role || '',
-  ratingAvg: user.ratingAvg ?? null,
-  ratingCount: user.ratingCount ?? null,
+  ratingAvg: user.ratingAvg ?? 0,
+  ratingCount: user.ratingCount ?? 0,
   status: user.status || ''
 })
 
@@ -67,11 +67,11 @@ const getJobByIdForAI = async (projectId: string): Promise<AIJobData | null> => 
 }
 
 /**
- * Get all active freelancers and contractors formatted for the AI service.
+ * Get all active freelancers (role=freelancer) formatted for the AI service.
  */
 const getFreelancersForAI = async (): Promise<AIFreelancerData[]> => {
   const users = await User.find({
-    role: { $in: ['freelancer', 'contractor'] },
+    role: 'freelancer',
     status: 'active'
   })
     .select('_id fullName description role ratingAvg ratingCount status')
@@ -81,7 +81,7 @@ const getFreelancersForAI = async (): Promise<AIFreelancerData[]> => {
 }
 
 /**
- * Get a single freelancer/contractor by ID formatted for the AI service.
+ * Get a single freelancer by ID formatted for the AI service.
  */
 const getFreelancerByIdForAI = async (userId: string): Promise<AIFreelancerData | null> => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -90,7 +90,44 @@ const getFreelancerByIdForAI = async (userId: string): Promise<AIFreelancerData 
 
   const user = await User.findOne({
     _id: userId,
-    role: { $in: ['freelancer', 'contractor'] },
+    role: 'freelancer',
+    status: 'active'
+  })
+    .select('_id fullName description role ratingAvg ratingCount status')
+    .lean()
+
+  if (!user) {
+    return null
+  }
+
+  return transformUserToAIFreelancer(user)
+}
+
+/**
+ * Get all active contractors (role=contractor) formatted for the AI service.
+ */
+const getContractorsForAI = async (): Promise<AIFreelancerData[]> => {
+  const users = await User.find({
+    role: 'contractor',
+    status: 'active'
+  })
+    .select('_id fullName description role ratingAvg ratingCount status')
+    .lean()
+
+  return users.map(transformUserToAIFreelancer)
+}
+
+/**
+ * Get a single contractor by ID formatted for the AI service.
+ */
+const getContractorByIdForAI = async (userId: string): Promise<AIFreelancerData | null> => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return null
+  }
+
+  const user = await User.findOne({
+    _id: userId,
+    role: 'contractor',
     status: 'active'
   })
     .select('_id fullName description role ratingAvg ratingCount status')
@@ -178,6 +215,8 @@ export const aiService = {
   getJobByIdForAI,
   getFreelancersForAI,
   getFreelancerByIdForAI,
+  getContractorsForAI,
+  getContractorByIdForAI,
   getMessagesForAI,
   createMessageForAI
 }
