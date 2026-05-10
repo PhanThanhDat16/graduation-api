@@ -16,16 +16,15 @@ import { User } from '@/models/user.model'
 const REFRESH_TOKEN_COOKIE_NAME = process.env.REFRESH_TOKEN_COOKIE_NAME as string
 
 const getRefreshCookieOptions = (): CookieOptions => {
-  const isDevelopment = process.env.NODE_ENV === 'development'
   const expiresInSeconds = parseInt(process.env.EXPIRES_REFRESHTOKEN as string)
 
   return {
     // XSS attack
     httpOnly: true,
-    secure: isDevelopment,
+    secure: false,
     // CSRF attack
     sameSite: 'lax',
-    path: '/api/auth',
+    path: '/',
     // Set the cookie lifespan
     maxAge: Number.isFinite(expiresInSeconds) ? expiresInSeconds * 1000 : undefined
   }
@@ -113,7 +112,7 @@ const logout = asyncHandler(async (req: Request, res: Response) => {
 
 const refreshToken = asyncHandler(async (req: Request, res: Response) => {
   const cookieRefreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME] as string | undefined
-  const { refreshToken: bodyRefreshToken } = req.body as { refreshToken?: string }
+  const bodyRefreshToken = (req.body as { refreshToken?: string } | undefined)?.refreshToken
   const refreshToken = cookieRefreshToken ?? bodyRefreshToken
 
   if (!refreshToken) {
