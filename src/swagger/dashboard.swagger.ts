@@ -57,6 +57,61 @@
  *           type: string
  *         data:
  *           $ref: '#/components/schemas/DashboardData'
+ * 
+ *     PersonalDashboardStats:
+ *       type: object
+ *       properties:
+ *         openProjects:
+ *           type: number
+ *           description: (Contractor) Number of projects with status 'open' or 'in_progress'
+ *         activeContracts:
+ *           type: number
+ *           description: Number of contracts currently in progress
+ *         escrowAmount:
+ *           type: number
+ *           description: Total amount held in escrow
+ *         totalSpent:
+ *           type: number
+ *           description: (Contractor) Total amount spent on completed contracts
+ *         totalEarned:
+ *           type: number
+ *           description: (Freelancer) Total amount earned from completed contracts
+ *         applications:
+ *           type: number
+ *           description: (Freelancer) Number of applications submitted
+ * 
+ *     PersonalDashboardData:
+ *       type: object
+ *       properties:
+ *         role:
+ *           type: string
+ *           enum: [contractor, freelancer]
+ *         fullName:
+ *           type: string
+ *         stats:
+ *           $ref: '#/components/schemas/PersonalDashboardStats'
+ *         walletBalance:
+ *           type: number
+ *         recentProjects:
+ *           type: array
+ *           items:
+ *             type: object
+ *         recentContracts:
+ *           type: array
+ *           items:
+ *             type: object
+ *         recentApplications:
+ *           type: array
+ *           items:
+ *             type: object
+ * 
+ *     PersonalDashboardResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *         data:
+ *           $ref: '#/components/schemas/PersonalDashboardData'
  */
 
 /**
@@ -99,6 +154,26 @@
  *               $ref: '#/components/schemas/DashboardResponse'
  *       400:
  *         description: Bad Request - Missing or invalid parameters
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @openapi
+ * /api/dashboard/personal:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Get personal dashboard data for the authenticated user
+ *     description: Returns stats, balance, and recent activities based on whether the user is a Contractor or Freelancer.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PersonalDashboardResponse'
  *       401:
  *         description: Unauthorized
  */

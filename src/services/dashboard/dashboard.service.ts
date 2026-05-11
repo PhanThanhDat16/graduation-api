@@ -1,6 +1,10 @@
 import { Contract } from '@/models/contract.model'
 import { DisputeForm } from '@/models/dispute_form.model'
 import { WalletTransaction } from '@/models/wallet_transaction.model'
+import { Project } from '@/models/project.model'
+import { Wallet } from '@/models/wallet.model'
+import { User } from '@/models/user.model'
+import mongoose from 'mongoose'
 
 type Granularity = 'day' | 'month' | 'year'
 
@@ -112,10 +116,7 @@ export const dashboardService = {
     // Run all aggregations in parallel
     const [contractBuckets, completedBuckets, disputeBuckets, revenueBuckets] = await Promise.all([
       // 1) Contracts created in period
-      Contract.aggregate([
-        { $match: { createdAt: dateFilter } },
-        { $group: { _id: groupId, count: { $sum: 1 } } }
-      ]),
+      Contract.aggregate([{ $match: { createdAt: dateFilter } }, { $group: { _id: groupId, count: { $sum: 1 } } }]),
 
       // 2) Contracts completed in period (status = 'completed', using endAt or updatedAt)
       Contract.aggregate([
@@ -139,10 +140,7 @@ export const dashboardService = {
       ]),
 
       // 3) Dispute cases created in period
-      DisputeForm.aggregate([
-        { $match: { createdAt: dateFilter } },
-        { $group: { _id: groupId, count: { $sum: 1 } } }
-      ]),
+      DisputeForm.aggregate([{ $match: { createdAt: dateFilter } }, { $group: { _id: groupId, count: { $sum: 1 } } }]),
 
       // 4) Revenue = admin_fee transactions completed in period
       WalletTransaction.aggregate([
@@ -201,5 +199,105 @@ export const dashboardService = {
     )
 
     return { buckets, summary }
+  },
+
+  async getPersonalDashboard(userId: string) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error('Invalid user ID format')
+    }
+
+    const user = await User.findById(userId).select('role fullName').lean()
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    // Get wallet balance
+    const wallet = await Wallet.findOne({ userId }).select('balance').lean()
+    const walletBalance = wallet?.balance || 0
+
+    if (user.role === 'contractor') {
+      // Contractor stats
+      const [openProjects, activeContracts, escrowAmount, totalSpent, activeProjectsData, activeContractsData] =
+        await Promise.all([
+          Project.countDocuments({ contractorId: userId, status: { $in: ['open', 'in_progress'] } }),
+          Contract.countDocuments({ contractorId: userId, status: { $in: ['in_progress', 'pending_approval'] } }),
+          Contract.aggregate([
+            { $match: { contractorId: new mongoose.Types.ObjectId(userId), status: 'in_progress' } },
+            { $group: { _id: null, total: { $sum: '$totalEscrowAmount' } } }
+          ]),
+          Contract.aggregate([
+            { $match: { contractorId: new mongoose.Types.ObjectId(userId), status: 'completed' } },
+            { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+          ]),
+          Project.find({ contractorId: userId, status: { $in: ['open', 'in_progress'] } })
+            .select('_id title status createdAt')
+            .limit(2)
+            .lean(),
+          Contract.find({ contractorId: userId, status: { $in: ['in_progress', 'pending_approval'] } })
+            .select('_id projectId deadline status createdAt')
+            .populate('projectId', 'title')
+            .limit(2)
+            .lean()
+        ])
+
+      return {
+        role: 'contractor',
+        fullName: user.fullName,
+        stats: {
+          openProjects,
+          activeContracts,
+          escrowAmount: escrowAmount[0]?.total || 0,
+          totalSpent: totalSpent[0]?.total || 0
+        },
+        walletBalance,
+        recentProjects: activeProjectsData || [],
+        recentContracts: activeContractsData || []
+      }
+    } else {
+      // Freelancer stats
+      const [applications, activeContracts, escrowAmount, totalEarned, applications2, contracts2] = await Promise.all([
+        // Count applications submitted
+        Contract.countDocuments({
+          freelancerId: userId,
+          status: { $in: ['pending_approval', 'pending_freelancer_agreement'] }
+        }),
+        // Count active contracts
+        Contract.countDocuments({ freelancerId: userId, status: 'in_progress' }),
+        // Escrow amount waiting for release
+        Contract.aggregate([
+          { $match: { freelancerId: new mongoose.Types.ObjectId(userId), status: 'in_progress' } },
+          { $group: { _id: null, total: { $sum: '$releasedToFreelancer' } } }
+        ]),
+        // Total earned
+        Contract.aggregate([
+          { $match: { freelancerId: new mongoose.Types.ObjectId(userId), status: 'completed' } },
+          { $group: { _id: null, total: { $sum: '$releasedToFreelancer' } } }
+        ]),
+        Contract.find({ freelancerId: userId, status: { $in: ['pending_approval', 'pending_freelancer_agreement'] } })
+          .select('_id projectId status createdAt')
+          .populate('projectId', 'title')
+          .limit(2)
+          .lean(),
+        Contract.find({ freelancerId: userId, status: 'in_progress' })
+          .select('_id projectId deadline status submittedAt')
+          .populate('projectId', 'title')
+          .limit(2)
+          .lean()
+      ])
+
+      return {
+        role: 'freelancer',
+        fullName: user.fullName,
+        stats: {
+          applications,
+          activeContracts,
+          escrowAmount: escrowAmount[0]?.total || 0,
+          totalEarned: totalEarned[0]?.total || 0
+        },
+        walletBalance,
+        recentApplications: applications2 || [],
+        recentContracts: contracts2 || []
+      }
+    }
   }
 }

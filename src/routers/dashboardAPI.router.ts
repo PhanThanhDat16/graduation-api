@@ -4,6 +4,7 @@ import { dashboardController } from '@/controllers/dashboard/dashboard.controlle
 
 const router = express.Router()
 
+router.get('/personal', requireAuth, dashboardController.getPersonalDashboard)
 router.get('/', requireAuth, dashboardController.getDashboard)
 
 export const routerDashboard = router
