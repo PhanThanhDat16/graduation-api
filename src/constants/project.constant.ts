@@ -14,6 +14,7 @@ export interface ProjectFilter {
   keyword?: string
   budgetMin?: number
   budgetMax?: number
+  skills?: string[] | string
 }
 
 export interface IProjectCreate {

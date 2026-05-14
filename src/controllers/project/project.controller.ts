@@ -62,7 +62,8 @@ const getAllProject = expressAsyncHandler(async (req: Request, res: Response) =>
     keyword: query.keyword,
     likes: query.likes !== undefined ? Number(query.likes) : undefined,
     budgetMin: query.budgetMin !== undefined ? Number(query.budgetMin) : undefined,
-    budgetMax: query.budgetMax !== undefined ? Number(query.budgetMax) : undefined
+    budgetMax: query.budgetMax !== undefined ? Number(query.budgetMax) : undefined,
+    skills: query.skills as string[] | string
   }
 
   const result = await projectService.getAllProject(filter)

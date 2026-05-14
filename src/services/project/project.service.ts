@@ -39,6 +39,11 @@ const getAllProject = async (query: ProjectQuery) => {
   if (query.budgetMax !== undefined) {
     filter.budgetMax = { $lte: Number(query.budgetMax) }
   }
+  
+  if (query.skills) {
+    const skillsArray = Array.isArray(query.skills) ? query.skills : (query.skills as string).split(',').map((s) => s.trim())
+    filter.skills = { $in: skillsArray }
+  }
 
   if (query.keyword) {
     filter.$or = [

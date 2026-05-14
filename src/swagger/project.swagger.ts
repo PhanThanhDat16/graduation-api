@@ -274,6 +274,11 @@
  *         schema:
  *           type: integer
  *         description: Filter by minimum number of likes
+ *       - in: query
+ *         name: skills
+ *         schema:
+ *           type: string
+ *         description: Filter by skills (comma-separated, e.g. react,nodejs)
  *     responses:
  *       200:
  *         description: List of projects
