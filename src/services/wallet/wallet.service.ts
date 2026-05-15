@@ -28,7 +28,7 @@ interface ContractTransactionOptions {
 // const WALLET_FIELDS = '_id userId balance createdAt updatedAt'
 const TRANSACTION_FIELDS =
   '_id walletId amount type methodPayment status userId contractId payerType paymentOrderId description createdAt'
-const WITHDRAW_REQUEST_FIELDS = '_id accountId amount amountReceived fee status staffId createdAt processedAt'
+const WITHDRAW_REQUEST_FIELDS = '_id accountId amount amountReceived fee status staffId createdAt processedAt updatedAt'
 
 // Get or create wallet for user
 const getOrCreateWallet = async (userId: string) => {
