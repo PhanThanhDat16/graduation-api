@@ -211,6 +211,225 @@ function generatePaymentReceiptEmail({
   `;
 }
 
+function generatePaymentRejectedEmail({
+  senderName,
+  senderAccount,
+  senderBank,
+  recipientName,
+  recipientAccount,
+  recipientBank,
+  transactionId,
+  amount,
+  fee,
+  note,
+  time,
+  requestId,
+  reason,
+}: {
+  senderName: string;
+  senderAccount: string;
+  senderBank: string;
+  recipientName: string;
+  recipientAccount: string;
+  recipientBank: string;
+  transactionId: string;
+  amount: number;
+  fee: number;
+  note: string;
+  time: string;
+  requestId: string;
+  reason?: string;
+}): string {
+  const fmt = (n: number) => n.toLocaleString("vi-VN");
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+</head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:20px 0;background:#f3f4f6;">
+  <tr>
+    <td align="center">
+
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;">
+
+        <!-- HEADER -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:24px 28px;color:#fff;">
+            <div style="font-size:20px;font-weight:800;">
+              <span>Free</span><span style="color:#fbbf24;">Work</span>
+            </div>
+            <div style="font-size:11px;opacity:0.8;margin-top:4px;">
+              BIÊN LAI GIAO DỊCH
+            </div>
+          </td>
+        </tr>
+
+        <!-- STATUS -->
+        <tr>
+          <td align="center" style="padding:26px 24px 18px;">
+            <div style="display:inline-block;background:#fee2e2;color:#b91c1c;padding:9px 20px;border-radius:50px;font-size:13px;font-weight:700;">
+              ✕ Giao dịch bị từ chối
+            </div>
+          </td>
+        </tr>
+
+        <!-- AMOUNT -->
+        <tr>
+          <td style="padding:0 24px 22px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff1f2;border:1px solid #fecdd3;border-radius:14px;">
+              <tr>
+                <td align="center" style="padding:22px;color:#7f1d1d;">
+                  <div style="font-size:12px;color:#991b1b;">SỐ TIỀN GIAO DỊCH</div>
+                  <div style="font-size:30px;font-weight:800;margin-top:6px;">
+                    ${fmt(amount)} VND
+                  </div>
+                  <div style="font-size:12px;color:#b91c1c;margin-top:8px;">
+                    Giao dịch chưa được xử lý thành công
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- SENDER / RECEIVER -->
+        <tr>
+          <td style="padding:0 24px 20px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="45%" valign="top">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #f59e0b;border-radius:12px;">
+                    <tr>
+                      <td style="padding:14px;">
+                        <div style="font-size:11px;color:#f59e0b;font-weight:700;margin-bottom:8px;">NGƯỜI CHUYỂN</div>
+                        <div style="font-size:14px;font-weight:700;color:#0f172a;">${senderName}</div>
+                        <div style="font-size:12px;color:#64748b;margin-top:4px;">${senderAccount}</div>
+                        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${senderBank}</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+
+                <td width="10%" align="center" valign="middle">
+                  <div style="background:#fee2e2;border-radius:50%;width:34px;height:34px;line-height:34px;text-align:center;font-weight:bold;color:#b91c1c;">
+                    ✕
+                  </div>
+                </td>
+
+                <td width="45%" valign="top">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #dc2626;border-radius:12px;">
+                    <tr>
+                      <td style="padding:14px;">
+                        <div style="font-size:11px;color:#dc2626;font-weight:700;margin-bottom:8px;">NGƯỜI NHẬN</div>
+                        <div style="font-size:14px;font-weight:700;color:#0f172a;">${recipientName}</div>
+                        <div style="font-size:12px;color:#64748b;margin-top:4px;">${recipientAccount}</div>
+                        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${recipientBank}</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- TRANSACTION -->
+        <tr>
+          <td style="padding:0 24px 20px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;">
+              <tr>
+                <td style="padding:12px 16px;">
+                  <table width="100%">
+                    <tr>
+                      <td>
+                        <div style="font-size:11px;color:#94a3b8;">MÃ GIAO DỊCH</div>
+                        <div style="font-size:13px;font-weight:600;">#${transactionId}</div>
+                      </td>
+                      <td align="right">
+                        <div style="font-size:11px;color:#94a3b8;">THỜI GIAN</div>
+                        <div style="font-size:13px;font-weight:600;">${time}</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- DETAIL -->
+        <tr>
+          <td style="padding:0 24px 24px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e2e8f0;">
+              <tr>
+                <td style="padding:10px 0;color:#64748b;">Mã yêu cầu</td>
+                <td align="right">${requestId}</td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;color:#64748b;">Số tiền giao dịch</td>
+                <td align="right">${fmt(amount)} VND</td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;color:#64748b;">Phí giao dịch</td>
+                <td align="right">${fmt(fee)} VND</td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;color:#64748b;">Nội dung chuyển khoản</td>
+                <td align="right">${note}</td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;color:#64748b;">Lý do từ chối</td>
+                <td align="right" style="color:#b91c1c;font-weight:600;">
+                  ${reason || "Giao dịch không đáp ứng điều kiện xử lý"}
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:12px 0;font-weight:700;">Trạng thái giao dịch</td>
+                <td align="right" style="color:#dc2626;font-weight:700;">
+                  Đã bị từ chối
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- NOTICE -->
+        <tr>
+          <td style="padding:0 24px 24px;">
+            <div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:12px 14px;font-size:12px;line-height:1.5;">
+              Giao dịch này chưa được hoàn tất. Vui lòng kiểm tra lại thông tin hoặc liên hệ bộ phận hỗ trợ nếu bạn cần thêm trợ giúp.
+            </div>
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td style="background:#0f172a;color:#94a3b8;text-align:center;padding:20px;font-size:11px;">
+            Email tự động từ FreeWork. Không trả lời email này.
+          </td>
+        </tr>
+
+      </table>
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>
+  `;
+}
+
 function generateNotificationContractorAcceptFreelancerEmail({
   projectId,
   freelancerName,
@@ -457,4 +676,4 @@ function generateNotificationFreelancerAcceptJob({
   `;
 }
 
-export { generatePaymentReceiptEmail, generateNotificationContractorAcceptFreelancerEmail, generateNotificationFreelancerAcceptJob };
+export { generatePaymentReceiptEmail, generatePaymentRejectedEmail, generateNotificationContractorAcceptFreelancerEmail, generateNotificationFreelancerAcceptJob };
