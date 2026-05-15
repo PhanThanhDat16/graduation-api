@@ -10,7 +10,8 @@ const refreshTokenSchema = new mongoose.Schema(
   {
     versionKey: false,
     strict: true,
-    collection: 'refresh_tokens'
+    collection: 'refresh_tokens',
+    timestamps: true
   }
 )
 

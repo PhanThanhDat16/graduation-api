@@ -40,7 +40,8 @@ const adminHistorySchema = new mongoose.Schema<IAdminHistory>(
   {
     versionKey: false,
     strict: true,
-    collection: 'admin_history'
+    collection: 'admin_history',
+    timestamps: true
   }
 )
 
