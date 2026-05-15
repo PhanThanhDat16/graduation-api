@@ -5,6 +5,7 @@ const walletTransactionSchema = new mongoose.Schema(
   {
     walletId: { type: mongoose.Schema.Types.ObjectId, ref: 'Wallet', required: true },
     amount: { type: Number, required: true },
+    adminFee: { type: Number },
     type: { type: String, enum: ETransactionType, required: true },
     methodPayment: { type: String, enum: EPaymentMethod },
     status: { type: String, enum: ETransactionStatus, default: 'pending' },

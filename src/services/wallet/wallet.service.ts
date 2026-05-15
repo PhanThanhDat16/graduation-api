@@ -166,6 +166,7 @@ const withdraw = async (userId: string, amount: number, methodPayment?: EPayment
         {
           walletId: wallet._id,
           amount: -amount,
+          adminFee: amount * 0.02,
           type: ETransactionType.WITHDRAW,
           methodPayment: methodPayment || EPaymentMethod.WALLET,
           paymentOrderId: orderId,
@@ -463,6 +464,7 @@ const createWithdrawRequest = async (userId: string, amount: number, accountId: 
     accountId: new mongoose.Types.ObjectId(accountId),
     amount,
     amountReceived,
+    fee,
     status: EWithdrawStatus.PENDING
   })
 
@@ -559,7 +561,7 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
   const bankName = account.bankShortName
   const amountRequest = request.amount
   const amountReceived = request.amountReceived
-  const fee = amountRequest * 0.02
+  const adminFee = amountRequest * 0.02
   const requestId_withdraw = request._id.toString()
 
   const time = new Date().toLocaleString('vi-VN')
@@ -577,7 +579,7 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
     transactionId: request._id.toString(),
     amount: amountRequest,
     amountReceived,
-    fee,
+    fee: adminFee,
     note: `${senderName} chuyen tien`,
     time,
     requestId: requestId_withdraw
