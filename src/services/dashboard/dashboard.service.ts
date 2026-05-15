@@ -1,10 +1,10 @@
 import { Contract } from '@/models/contract.model'
 import { DisputeForm } from '@/models/dispute_form.model'
-import { WalletTransaction } from '@/models/wallet_transaction.model'
 import { Project } from '@/models/project.model'
 import { Wallet } from '@/models/wallet.model'
 import { User } from '@/models/user.model'
 import mongoose from 'mongoose'
+import { WithdrawRequest } from '@/models/withdraw_request.model'
 
 type Granularity = 'day' | 'month' | 'year'
 
@@ -14,14 +14,16 @@ interface TimeseriesBucket {
   contracts: number
   completedProjects: number
   disputes: number
-  revenueVnd: number
+  revenueContractVnd: number
+  revenueWalletVnd?: number
 }
 
 interface DashboardSummary {
   totalContracts: number
   completedProjects: number
   disputeCases: number
-  revenueVnd: number
+  revenueContractVnd: number
+  revenueWalletVnd?: number
 }
 
 interface DashboardResult {
@@ -114,46 +116,59 @@ export const dashboardService = {
     const groupId = buildDateGroupId(granularity)
 
     // Run all aggregations in parallel
-    const [contractBuckets, completedBuckets, disputeBuckets, revenueBuckets] = await Promise.all([
-      // 1) Contracts created in period
-      Contract.aggregate([{ $match: { createdAt: dateFilter } }, { $group: { _id: groupId, count: { $sum: 1 } } }]),
+    const [contractBuckets, completedBuckets, disputeBuckets, revenueContractBuckets, revenueWalletBuckets] =
+      await Promise.all([
+        // 1) Contracts created in period
+        Contract.aggregate([{ $match: { createdAt: dateFilter } }, { $group: { _id: groupId, count: { $sum: 1 } } }]),
 
-      // 2) Contracts completed in period (status = 'completed', using endAt or updatedAt)
-      Contract.aggregate([
-        {
-          $match: {
-            status: 'completed',
-            $or: [{ endAt: dateFilter }, { updatedAt: dateFilter }]
+        // 2) Contracts completed in period (status = 'completed', using endAt or updatedAt)
+        Contract.aggregate([
+          {
+            $match: {
+              status: 'completed',
+              $or: [{ endAt: dateFilter }, { updatedAt: dateFilter }]
+            }
+          },
+          {
+            $addFields: {
+              completedDate: { $ifNull: ['$endAt', '$updatedAt'] }
+            }
+          },
+          {
+            $group: {
+              _id: buildDateGroupId(granularity, '$completedDate'),
+              count: { $sum: 1 }
+            }
           }
-        },
-        {
-          $addFields: {
-            completedDate: { $ifNull: ['$endAt', '$updatedAt'] }
-          }
-        },
-        {
-          $group: {
-            _id: buildDateGroupId(granularity, '$completedDate'),
-            count: { $sum: 1 }
-          }
-        }
-      ]),
+        ]),
 
-      // 3) Dispute cases created in period
-      DisputeForm.aggregate([{ $match: { createdAt: dateFilter } }, { $group: { _id: groupId, count: { $sum: 1 } } }]),
+        // 3) Dispute cases created in period
+        DisputeForm.aggregate([
+          { $match: { createdAt: dateFilter } },
+          { $group: { _id: groupId, count: { $sum: 1 } } }
+        ]),
 
-      // 4) Revenue = admin_fee transactions completed in period
-      WalletTransaction.aggregate([
-        {
-          $match: {
-            type: 'admin_fee',
-            status: 'completed',
-            createdAt: dateFilter
-          }
-        },
-        { $group: { _id: groupId, total: { $sum: '$amount' } } }
+        // 4) Revenue = admin_fee transactions completed in period
+        Contract.aggregate([
+          {
+            $match: {
+              status: 'completed',
+              createdAt: dateFilter
+            }
+          },
+          { $group: { _id: groupId, total: { $sum: '$adminFee' } } }
+        ]),
+
+        WithdrawRequest.aggregate([
+          {
+            $match: {
+              status: 'approved',
+              createdAt: dateFilter
+            }
+          },
+          { $group: { _id: groupId, total: { $sum: '$fee' } } }
+        ])
       ])
-    ])
 
     // Index aggregation results by sortKey for O(1) lookup
     const contractMap: Record<string, number> = {}
@@ -171,9 +186,14 @@ export const dashboardService = {
       disputeMap[toSortKey(b._id, granularity)] = b.count
     }
 
-    const revenueMap: Record<string, number> = {}
-    for (const b of revenueBuckets) {
-      revenueMap[toSortKey(b._id, granularity)] = b.total
+    const revenueContractMap: Record<string, number> = {}
+    for (const b of revenueContractBuckets) {
+      revenueContractMap[toSortKey(b._id, granularity)] = b.total
+    }
+
+    const revenueWalletMap: Record<string, number> = {}
+    for (const b of revenueWalletBuckets) {
+      revenueWalletMap[toSortKey(b._id, granularity)] = b.total
     }
 
     // Build final sorted buckets (with zero-filled gaps)
@@ -184,7 +204,8 @@ export const dashboardService = {
       contracts: contractMap[key] ?? 0,
       completedProjects: completedMap[key] ?? 0,
       disputes: disputeMap[key] ?? 0,
-      revenueVnd: revenueMap[key] ?? 0
+      revenueContractVnd: revenueContractMap[key] ?? 0,
+      revenueWalletVnd: revenueWalletMap[key] ?? 0
     }))
 
     // Summary = sum of all buckets
@@ -193,9 +214,10 @@ export const dashboardService = {
         totalContracts: acc.totalContracts + b.contracts,
         completedProjects: acc.completedProjects + b.completedProjects,
         disputeCases: acc.disputeCases + b.disputes,
-        revenueVnd: acc.revenueVnd + b.revenueVnd
+        revenueContractVnd: acc.revenueContractVnd + b.revenueContractVnd,
+        revenueWalletVnd: acc.revenueWalletVnd + (b.revenueWalletVnd ?? 0)
       }),
-      { totalContracts: 0, completedProjects: 0, disputeCases: 0, revenueVnd: 0 }
+      { totalContracts: 0, completedProjects: 0, disputeCases: 0, revenueContractVnd: 0, revenueWalletVnd: 0 }
     )
 
     return { buckets, summary }
