@@ -17,7 +17,7 @@ import {
   ICreateTransaction
 } from '@/constants/wallet.constants'
 import transporter from '@/config/nodemailer'
-import { generatePaymentReceiptEmail } from '@/utils/email_receipt'
+import { generatePaymentReceiptEmail, generatePaymentRejectedEmail } from '@/utils/email_receipt'
 
 interface ContractTransactionOptions {
   contractId?: string
@@ -28,7 +28,7 @@ interface ContractTransactionOptions {
 // const WALLET_FIELDS = '_id userId balance createdAt updatedAt'
 const TRANSACTION_FIELDS =
   '_id walletId amount type methodPayment status userId contractId payerType paymentOrderId description createdAt'
-const WITHDRAW_REQUEST_FIELDS = '_id accountId amount amountReceived status staffId createdAt processedAt'
+const WITHDRAW_REQUEST_FIELDS = '_id accountId amount amountReceived fee status staffId createdAt processedAt updatedAt'
 
 // Get or create wallet for user
 const getOrCreateWallet = async (userId: string) => {
@@ -521,7 +521,7 @@ const getAllWithdrawRequests = async (query: PaginationQuery & WithdrawRequestFi
   return result
 }
 
-// Process withdraw request (staff)
+// Process withdraw request (staff/admin)
 const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus, staffId: string) => {
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
     throw new Error('Invalid request ID format')
@@ -567,7 +567,7 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
   const requestUserId = (request.accountId as any)?.userId
   if (!requestUserId) throw new Error('Account owner not found')
 
-  const htmlResult = generatePaymentReceiptEmail({
+  const htmlResultSuccess = generatePaymentReceiptEmail({
     senderName,
     senderAccount,
     senderBank,
@@ -583,11 +583,27 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
     requestId: requestId_withdraw
   })
 
+  const htmlResultRejected = generatePaymentRejectedEmail({
+    senderName,
+    senderAccount,
+    senderBank,
+    recipientName: accountName,
+    recipientAccount: accountNumber,
+    recipientBank: bankName,
+    transactionId: request._id.toString(),
+    amount: amountRequest,
+    fee,
+    note: `${senderName} chuyen tien`,
+    time,
+    requestId: requestId_withdraw,
+    reason: 'FreeWork có nghi vấn về giao dịch này. Vui lòng liên hệ admin để biết thêm chi tiết.'
+  })
+
   const mailOptions = {
     from: `"FreeWork" <${process.env.AUTH_EMAIL}>`,
     to: email,
     subject: 'Biên Lai Thanh Toán',
-    html: htmlResult
+    html: status === EWithdrawStatus.APPROVED || status === EWithdrawStatus.PAID ? htmlResultSuccess : htmlResultRejected
   }
 
   const session = await mongoose.startSession()
