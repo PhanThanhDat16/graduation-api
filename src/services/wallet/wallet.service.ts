@@ -16,8 +16,6 @@ import {
   WithdrawRequestFilter,
   ICreateTransaction
 } from '@/constants/wallet.constants'
-import { User } from '@/models/user.model'
-import moment from 'moment'
 import transporter from '@/config/nodemailer'
 import { generatePaymentReceiptEmail } from '@/utils/email_receipt'
 
@@ -166,7 +164,7 @@ const withdraw = async (userId: string, amount: number, methodPayment?: EPayment
         {
           walletId: wallet._id,
           amount: -amount,
-          adminFee: amount * 0.02,
+          fee: amount * 0.02,
           type: ETransactionType.WITHDRAW,
           methodPayment: methodPayment || EPaymentMethod.WALLET,
           paymentOrderId: orderId,

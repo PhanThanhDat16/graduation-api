@@ -1,6 +1,5 @@
 import { Contract } from '@/models/contract.model'
 import { DisputeForm } from '@/models/dispute_form.model'
-import { WalletTransaction } from '@/models/wallet_transaction.model'
 import { Project } from '@/models/project.model'
 import { Wallet } from '@/models/wallet.model'
 import { User } from '@/models/user.model'
