@@ -12,7 +12,8 @@ const applicationSchema = new mongoose.Schema(
   },
   {
     versionKey: false,
-    strict: true
+    strict: true,
+    timestamps: true
   }
 )
 

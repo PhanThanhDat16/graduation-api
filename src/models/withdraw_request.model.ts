@@ -13,7 +13,8 @@ const withdrawRequestSchema = new mongoose.Schema(
   {
     versionKey: false,
     strict: true,
-    collection: 'withdraw_requests'
+    collection: 'withdraw_requests',
+    timestamps: true
   }
 )
 

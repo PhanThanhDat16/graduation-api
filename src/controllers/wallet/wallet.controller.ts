@@ -197,7 +197,7 @@ const processWithdrawRequest = expressAsyncHandler(async (req: RequestWithUser, 
     return
   }
 
-  if (role !== 'staff') {
+  if (role !== 'staff' && role !== 'admin') {
     res.status(HttpStatus.FORBIDDEN).json({ message: 'Forbidden' })
     return
   }

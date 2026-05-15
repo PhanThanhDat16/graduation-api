@@ -50,7 +50,8 @@ const disputeFormSchema = new mongoose.Schema(
   {
     versionKey: false,
     strict: true,
-    collection: 'dispute_forms'
+    collection: 'dispute_forms',
+    timestamps: { createdAt: true, updatedAt: false }
   }
 )
 

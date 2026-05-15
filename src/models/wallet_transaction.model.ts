@@ -29,7 +29,8 @@ const walletTransactionSchema = new mongoose.Schema(
   {
     versionKey: false,
     strict: true,
-    collection: 'wallet_transactions'
+    collection: 'wallet_transactions',
+    timestamps: true
   }
 )
 

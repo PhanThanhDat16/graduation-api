@@ -16,7 +16,8 @@ const emailOtpSchema = new mongoose.Schema<IEmailOtp>(
   {
     versionKey: false,
     strict: true,
-    collection: 'email_otps'
+    collection: 'email_otps',
+    timestamps: true
   }
 )
 
