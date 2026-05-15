@@ -561,7 +561,7 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
   const bankName = account.bankShortName
   const amountRequest = request.amount
   const amountReceived = request.amountReceived
-  const adminFee = amountRequest * 0.02
+  const fee = amountRequest * 0.02
   const requestId_withdraw = request._id.toString()
 
   const time = new Date().toLocaleString('vi-VN')
@@ -579,7 +579,7 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
     transactionId: request._id.toString(),
     amount: amountRequest,
     amountReceived,
-    fee: adminFee,
+    fee,
     note: `${senderName} chuyen tien`,
     time,
     requestId: requestId_withdraw
