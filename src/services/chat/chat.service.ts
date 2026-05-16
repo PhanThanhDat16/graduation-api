@@ -61,7 +61,7 @@ const ensureMemberOrAutoJoinStaff = async (groupId: string, userId: string): Pro
     ChatGroup.findById(groupId).select('type').lean() as any
   ])
 
-  if (user?.role === 'staff' && group && STAFF_ACCESSIBLE_TYPES.includes(group.type)) {
+  if ((user?.role === 'staff' || user?.role === 'admin') && group && STAFF_ACCESSIBLE_TYPES.includes(group.type)) {
     // Auto-join: add staff to ChatMember and memberIds
     await ChatMember.updateOne(
       { groupId: groupId, userId: new mongoose.Types.ObjectId(userId) },

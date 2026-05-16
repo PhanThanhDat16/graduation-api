@@ -18,6 +18,7 @@ import {
 } from '@/constants/wallet.constants'
 import transporter from '@/config/nodemailer'
 import { generatePaymentReceiptEmail, generatePaymentRejectedEmail } from '@/utils/email_receipt'
+import { EAccountStatus } from '@/constants/account_bank.constants'
 
 interface ContractTransactionOptions {
   contractId?: string
@@ -435,6 +436,10 @@ const createWithdrawRequest = async (userId: string, amount: number, accountId: 
   const account = await AccountBank.findOne({ _id: accountId, userId })
   if (!account) {
     throw new Error('Bank account not found or does not belong to user')
+  }
+
+  if (account.status !== EAccountStatus.ACTIVE) {
+    throw new Error('Can not withdraw money from inactive bank account')
   }
 
   const wallet = await getOrCreateWallet(userId)

@@ -156,7 +156,7 @@ const updateProfile = expressAsyncHandler(async (req: RequestWithUser, res: Resp
     return
   }
 
-  const { fullName, phone, address, birthday, gender, description, avatar, backgroundAvatar, isVerified } = req.body
+  const { fullName, phone, address, birthday, gender, description, avatar, backgroundAvatar, role, isVerified } = req.body
 
   const user = await userService.updateProfile(userId as string, {
     fullName,
@@ -167,6 +167,7 @@ const updateProfile = expressAsyncHandler(async (req: RequestWithUser, res: Resp
     description,
     avatar,
     backgroundAvatar,
+    role,
     isVerified
   })
 
