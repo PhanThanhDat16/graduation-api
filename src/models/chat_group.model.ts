@@ -1,4 +1,4 @@
-import { EChatGroupType } from '@/constants/chat.constants'
+import { EChatGroupType, EChatGroupStatus } from '@/constants/chat.constants'
 import mongoose, { Document } from 'mongoose'
 
 const chatGroupSchema = new mongoose.Schema(
@@ -11,7 +11,8 @@ const chatGroupSchema = new mongoose.Schema(
     assignedStaffId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     lastMessage: { type: String, default: '' },
     lastMessageAt: { type: Date, default: null },
-    lastSenderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+    lastSenderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    status: { type: String, enum: EChatGroupStatus, default: EChatGroupStatus.ACTIVE }
   },
   {
     versionKey: false,
@@ -38,5 +39,6 @@ export interface IChatGroup extends Document {
   lastMessage: string
   lastMessageAt: Date | null
   lastSenderId: mongoose.Types.ObjectId | null
+  status: EChatGroupStatus
   createdAt: Date
 }

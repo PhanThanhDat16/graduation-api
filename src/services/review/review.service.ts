@@ -3,6 +3,7 @@ import { ICreateReview, IUpdateReview, ReviewQuery } from '@/constants/review.co
 import { Contract } from '@/models/contract.model'
 import { Review } from '@/models/review.model'
 import { paginate } from '@/utils/paginate'
+import { User } from '@/models/user.model'
 import mongoose from 'mongoose'
 
 const REVIEW_SAFE_FIELDS = '_id contractId reviewerId revieweeId role rating comment createdAt updatedAt'
@@ -62,6 +63,19 @@ const createReview = async (reviewerId: string, data: ICreateReview) => {
     rating: data.rating,
     comment: data.comment
   } as any)
+
+  // Update reviewee's ratingAvg and ratingCount
+  const stats = await Review.aggregate([
+    { $match: { revieweeId: new mongoose.Types.ObjectId(revieweeId) } },
+    { $group: { _id: '$revieweeId', avg: { $avg: '$rating' }, count: { $sum: 1 } } }
+  ])
+
+  if (stats.length > 0) {
+    await User.findByIdAndUpdate(revieweeId, {
+      ratingAvg: Math.round(stats[0].avg * 10) / 10,
+      ratingCount: stats[0].count
+    })
+  }
 
   return review
 }

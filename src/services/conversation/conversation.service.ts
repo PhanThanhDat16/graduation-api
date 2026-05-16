@@ -393,7 +393,8 @@ export const conversationService = {
         lastMessageAt: g.lastMessageAt ?? null,
         lastSenderId: toPublicUser(g.lastSenderId),
         createdAt: g.createdAt,
-        unreadCount: unreadCounts[i] ?? 0
+        unreadCount: unreadCounts[i] ?? 0,
+        status: g.status || 'active'
       }
     }) as ChatGroupListItem[]
   },
@@ -482,7 +483,6 @@ export const conversationService = {
         _id: g._id.toString(),
         memberIds: Array.isArray(g.memberIds) ? g.memberIds : [],
         ownerId: toPublicUser(g.ownerId),
-        // ownerInfo: toPublicUser(g.ownerId),
         type: g.type as EChatGroupType,
         disputeId: g.disputeId ? g.disputeId.toString() : null,
         assignedStaffId: g.assignedStaffId?._id ? g.assignedStaffId._id.toString() : null,
@@ -491,6 +491,7 @@ export const conversationService = {
         lastMessage: g.lastMessage,
         lastMessageAt: g.lastMessageAt ?? null,
         lastSenderId: toPublicUser(g.lastSenderId),
+        status: g.status || 'active',
         createdAt: g.createdAt
       }
     })

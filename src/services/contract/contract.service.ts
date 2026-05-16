@@ -11,10 +11,17 @@ import {
 } from '@/constants/contract.constants'
 import { walletService } from '@/services/wallet/wallet.service'
 import { EPayerType } from '@/constants/wallet.constants'
-import { generateNotificationContractorAcceptFreelancerEmail, generateNotificationFreelancerAcceptJob } from '@/utils/email_receipt'
+import {
+  generateNotificationContractorAcceptFreelancerEmail,
+  generateNotificationFreelancerAcceptJob
+} from '@/utils/email_receipt'
 import transporter from '@/config/nodemailer'
 import { userService } from '../user/user.service'
 import { projectService } from '../project/project.service'
+import { Project } from '@/models/project.model'
+import { EProjectStatus } from '@/constants/project.constant'
+import { ChatGroup } from '@/models/chat_group.model'
+import { EChatGroupStatus } from '@/constants/chat.constants'
 
 const CONTRACT_FIELDS = `
   _id projectId applicationId contractorId freelancerId
@@ -34,12 +41,12 @@ const CONTRACT_FIELDS = `
 /**
  * Tính số tiền mỗi bên cần đóng
  * - Contractor: totalAmount + adminFee
- * - Freelancer: freelancerDeposit (có thể = 0)
+ * - Freelancer: 2% của totalAmount (tiền cọc cam kết)
  */
 const calculatePaymentAmounts = (contract: any) => {
   return {
     contractorAmount: contract.totalAmount + contract.adminFee,
-    freelancerAmount: contract.freelancerDeposit || 0
+    freelancerAmount: contract.freelancerDeposit || Math.round(contract.totalAmount * 0.15)
   }
 }
 
@@ -69,7 +76,7 @@ const createContract = async (data: ICreateContract) => {
     freelancerTerms: data.freelancerTerms,
     totalAmount: data.totalAmount,
     adminFee: data.adminFee || 0,
-    freelancerDeposit: data.freelancerDeposit || 0,
+    freelancerDeposit: data.freelancerDeposit || Math.round(data.totalAmount * 0.15),
     deadline: data.deadline,
     status: EContractStatus.DRAFT,
     escrowStatus: EEscrowStatus.PENDING
@@ -82,23 +89,23 @@ const createContract = async (data: ICreateContract) => {
 
   const notificationForFreelancer = generateNotificationContractorAcceptFreelancerEmail({
     projectId: inforProject._id.toString(),
-    freelancerName: inforFreelancer.fullName || "Freelancer",
-    projectName: inforProject.title, 
-    budget: data.totalAmount.toLocaleString('vi-VN') + " VND",
-    contractorName: (inforProject.contractorId as any).fullName || "Contractor",
+    freelancerName: inforFreelancer.fullName || 'Freelancer',
+    projectName: inforProject.title,
+    budget: data.totalAmount.toLocaleString('vi-VN') + ' VND',
+    contractorName: (inforProject.contractorId as any).fullName || 'Contractor',
     contractorEmail: (inforProject.contractorId as any).email
   })
 
   const mailOptions = {
     from: `"FreeWork" <${process.env.AUTH_EMAIL}>`,
     to: inforFreelancer.email,
-    subject: "Thông báo chấp nhận hợp đồng",
+    subject: 'Thông báo chấp nhận hợp đồng',
     html: notificationForFreelancer
   }
 
-  transporter.sendMail(mailOptions as any).catch(err => {
-  console.error('Send mail error:', err)
-})
+  transporter.sendMail(mailOptions as any).catch((err) => {
+    console.error('Send mail error:', err)
+  })
 
   return contract
 }
@@ -237,10 +244,7 @@ const agreeToContract = async (contractId: string, userId: string) => {
     throw new Error('You are not authorized to agree to this contract')
   }
 
-  if (
-    contract.status !== EContractStatus.DRAFT &&
-    contract.status !== EContractStatus.PENDING_AGREEMENT
-  ) {
+  if (contract.status !== EContractStatus.DRAFT && contract.status !== EContractStatus.PENDING_AGREEMENT) {
     throw new Error('Contract cannot be agreed in current status')
   }
 
@@ -275,17 +279,14 @@ const agreeToContract = async (contractId: string, userId: string) => {
         html: freelancerNotification
       }
 
-      transporter.sendMail(mailOptions as any)
-        .catch(err => {
-          console.error('Send mail error:', err)
-        })
+      transporter.sendMail(mailOptions as any).catch((err) => {
+        console.error('Send mail error:', err)
+      })
     }
   }
 
   // ✅ Check both agreed
-  const bothAgreed =
-    (isContractor && contract.freelancerAgreed) ||
-    (isFreelancer && contract.contractorAgreed)
+  const bothAgreed = (isContractor && contract.freelancerAgreed) || (isFreelancer && contract.contractorAgreed)
 
   if (bothAgreed) {
     updateData.status = EContractStatus.WAITING_PAYMENT
@@ -294,11 +295,7 @@ const agreeToContract = async (contractId: string, userId: string) => {
     updateData.status = EContractStatus.PENDING_AGREEMENT
   }
 
-  const updatedContract = await Contract.findByIdAndUpdate(
-    contractId,
-    updateData,
-    { new: true }
-  ).lean()
+  const updatedContract = await Contract.findByIdAndUpdate(contractId, updateData, { new: true }).lean()
 
   return updatedContract
 }
@@ -340,23 +337,9 @@ const payForContract = async (contractId: string, userId: string) => {
     depositAmount = paymentAmounts.freelancerAmount
     payerType = EPayerType.FREELANCER
 
-    // Nếu freelancer không cần đóng tiền
-    if (depositAmount === 0) {
-      const updateData: any = {
-        freelancerPaid: true,
-        freelancerPaidAt: new Date(),
-        freelancerPaidAmount: 0,
-        lastUpdatedAt: new Date()
-      }
-
-      // Check if both paid
-      if (contract.contractorPaid) {
-        updateData.status = EContractStatus.RUNNING
-        updateData.escrowStatus = EEscrowStatus.FUNDED
-        updateData.startAt = new Date()
-      }
-
-      return await Contract.findByIdAndUpdate(contractId, updateData, { new: true }).lean()
+    // Nếu freelancer không cần đóng tiền (edge case)
+    if (depositAmount <= 0) {
+      throw new Error('No deposit required for freelancer')
     }
   }
 
@@ -384,9 +367,8 @@ const payForContract = async (contractId: string, userId: string) => {
     updateData.freelancerPaidAmount = depositAmount
   }
 
-  // Check if both paid (hoặc freelancer không cần pay)
-  const freelancerNeedsPay = paymentAmounts.freelancerAmount > 0
-  const bothPaid = isContractor ? !freelancerNeedsPay || contract.freelancerPaid : contract.contractorPaid
+  // Check if both parties have paid
+  const bothPaid = isContractor ? contract.freelancerPaid : contract.contractorPaid
 
   if (bothPaid) {
     updateData.status = EContractStatus.RUNNING
@@ -496,6 +478,22 @@ const completeContract = async (contractId: string, contractorId: string) => {
     },
     { new: true }
   ).lean()
+
+  // 4. Update project status to closed
+  if (updatedContract) {
+    await Project.findByIdAndUpdate(contract.projectId, { status: EProjectStatus.CLOSED })
+
+    // 5. Close chat group (contract_chat) associated with this contract
+    const contractorId = contract.contractorId.toString()
+    const freelancerId = contract.freelancerId.toString()
+    await ChatGroup.updateMany(
+      {
+        type: 'contract_chat',
+        memberIds: { $all: [contractorId, freelancerId] }
+      },
+      { status: EChatGroupStatus.CLOSED }
+    )
+  }
 
   return updatedContract
 }

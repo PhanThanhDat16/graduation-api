@@ -14,7 +14,7 @@ import {
   ICreateDispute,
   IProposeResolution
 } from '@/constants/contract.constants'
-import { EChatGroupType, EChatMemberRole } from '@/constants/chat.constants'
+import { EChatGroupType, EChatMemberRole, EChatGroupStatus } from '@/constants/chat.constants'
 import { walletService } from '@/services/wallet/wallet.service'
 import { EPayerType } from '@/constants/wallet.constants'
 
@@ -124,8 +124,41 @@ const submitReason = async (disputeId: string, userId: string, reason: string, r
   }
 
   // Chỉ cho phép ở PENDING_REASONS hoặc WAITING_ESCALATION
+  // Ngoại lệ: nếu dispute đã RESOLVED với type EXTEND thì cho phép submit lại reason (tạo dispute mới flow)
   if (dispute.status !== EDisputeStatus.PENDING_REASONS && dispute.status !== EDisputeStatus.WAITING_ESCALATION) {
-    throw new Error('Cannot submit reason in current status')
+    if (dispute.status === EDisputeStatus.RESOLVED && dispute.resolutionType === EResolutionType.EXTEND) {
+      // Reset dispute về PENDING_REASONS để bắt đầu lại flow
+      // Giữ lại staffId và staffDecision để admin thấy lịch sử
+      const resetDispute = await DisputeForm.findByIdAndUpdate(
+        disputeId,
+        {
+          status: EDisputeStatus.PENDING_REASONS,
+          reasonDeadline: new Date(Date.now() + 60 * 60 * 1000),
+          // Reset các field reason/resolution
+          contractorReason: null,
+          freelancerReason: null,
+          contractorRequestedResolution: null,
+          freelancerRequestedResolution: null,
+          contractorAgreed: false,
+          freelancerAgreed: false,
+          resolutionType: null,
+          freelancerAmount: 0,
+          contractorAmount: 0,
+          newDeadline: null,
+          // KHÔNG reset staffDecision và staffId — giữ lịch sử cho admin
+          escalatedBy: null,
+          escalatedAt: null,
+          resolvedAt: null
+        },
+        { new: true }
+      )
+      // Re-fetch dispute sau khi reset
+      if (!resetDispute) throw new Error('Failed to reset dispute')
+      // Tiếp tục flow bình thường với dispute đã reset
+      Object.assign(dispute, resetDispute.toObject())
+    } else {
+      throw new Error('Cannot submit reason in current status')
+    }
   }
 
   const updateData: any = {}
@@ -231,6 +264,21 @@ const escalateDispute = async (disputeId: string, userId: string) => {
     escrowStatus: EEscrowStatus.LOCKED,
     lastUpdatedAt: new Date()
   })
+
+  // Nếu dispute mở lại (đã có staff trước đó), update chat group sang dispute_chat
+  if (dispute.staffId) {
+    const contractorId = dispute.contractorId.toString()
+    const freelancerId = dispute.freelancerId.toString()
+    const group = await findContractChatGroup(contractorId, freelancerId)
+    if (group) {
+      await ChatGroup.findByIdAndUpdate(group._id, {
+        $set: {
+          type: EChatGroupType.DISPUTE_CHAT,
+          disputeId: new mongoose.Types.ObjectId(disputeId)
+        }
+      })
+    }
+  }
 
   return updatedDispute
 }
@@ -371,12 +419,13 @@ const proposeResolution = async (disputeId: string, userId: string, data: IPropo
   }
 
   // Validate amounts for CANCEL and SPLIT
+  // Số tiền chia chỉ dựa trên totalAmount (giá trị dự án), không bao gồm adminFee và freelancerDeposit
   if (data.resolutionType === EResolutionType.CANCEL || data.resolutionType === EResolutionType.SPLIT) {
-    const totalEscrow = contract.totalEscrowAmount
+    const totalAmount = contract.totalAmount
     const proposedTotal = (data.freelancerAmount || 0) + (data.contractorAmount || 0)
 
-    if (proposedTotal !== totalEscrow) {
-      throw new Error(`Total proposed amounts (${proposedTotal}) must equal total escrow (${totalEscrow})`)
+    if (proposedTotal !== totalAmount) {
+      throw new Error(`Total proposed amounts (${proposedTotal}) must equal total project amount (${totalAmount})`)
     }
   }
 
@@ -503,8 +552,10 @@ const executeResolution = async (dispute: any) => {
 
     case EResolutionType.CANCEL:
     case EResolutionType.SPLIT:
-      // Trường hợp 2: Hủy hợp đồng — chia tiền theo %
-      // Trả tiền cho freelancer
+      // Trường hợp 2: Hủy hợp đồng — chia tiền dựa trên totalAmount
+      // freelancerAmount + contractorAmount = totalAmount (giá trị dự án)
+
+      // Trả tiền cho freelancer (phần được chia từ totalAmount)
       if (dispute.freelancerAmount > 0) {
         await walletService.escrowRelease(
           dispute.freelancerId.toString(),
@@ -518,7 +569,7 @@ const executeResolution = async (dispute: any) => {
         )
       }
 
-      // Trả tiền cho contractor
+      // Trả tiền cho contractor (phần được chia từ totalAmount)
       if (dispute.contractorAmount > 0) {
         await walletService.refund(
           dispute.contractorId.toString(),
@@ -532,15 +583,41 @@ const executeResolution = async (dispute: any) => {
         )
       }
 
+      // Hoàn lại freelancerDeposit cho freelancer (tiền cọc cam kết)
+      const freelancerDepositRefund = contract.freelancerPaidAmount || 0
+      if (freelancerDepositRefund > 0) {
+        await walletService.refund(
+          contract.freelancerId.toString(),
+          freelancerDepositRefund,
+          contract.contractorId.toString(),
+          {
+            contractId: contractId,
+            payerType: EPayerType.FREELANCER,
+            description: `Dispute resolved - freelancer deposit refund`
+          }
+        )
+      }
+
       await Contract.findByIdAndUpdate(dispute.contractId, {
         status:
           dispute.resolutionType === EResolutionType.SPLIT ? EContractStatus.COMPLETED : EContractStatus.CANCELLED,
         escrowStatus: dispute.resolutionType === EResolutionType.SPLIT ? EEscrowStatus.SPLIT : EEscrowStatus.REFUNDED,
         releasedToFreelancer: dispute.freelancerAmount,
         refundedToContractor: dispute.contractorAmount,
+        refundedToFreelancer: freelancerDepositRefund,
+        adminFeeCollected: contract.adminFee,
         endAt: new Date(),
         lastUpdatedAt: new Date()
       })
+
+      // Close chat group khi contract kết thúc
+      await ChatGroup.updateMany(
+        {
+          memberIds: { $all: [dispute.contractorId.toString(), dispute.freelancerId.toString()] },
+          type: { $in: [EChatGroupType.CONTRACT_CHAT, EChatGroupType.DISPUTE_CHAT] }
+        },
+        { status: EChatGroupStatus.CLOSED }
+      )
       break
   }
 }
@@ -565,12 +642,13 @@ const staffResolveDispute = async (disputeId: string, staffId: string, decision:
   }
 
   // Validate amounts
+  // Số tiền chia chỉ dựa trên totalAmount (giá trị dự án), không bao gồm adminFee và freelancerDeposit
   if (data.resolutionType === EResolutionType.CANCEL || data.resolutionType === EResolutionType.SPLIT) {
-    const totalEscrow = contract.totalEscrowAmount
+    const totalAmount = contract.totalAmount
     const proposedTotal = (data.freelancerAmount || 0) + (data.contractorAmount || 0)
 
-    if (proposedTotal !== totalEscrow) {
-      throw new Error(`Total proposed amounts (${proposedTotal}) must equal total escrow (${totalEscrow})`)
+    if (proposedTotal !== totalAmount) {
+      throw new Error(`Total proposed amounts (${proposedTotal}) must equal total project amount (${totalAmount})`)
     }
   }
 
@@ -644,11 +722,13 @@ const getAllDisputes = async (query: PaginationQuery & DisputeFilter) => {
   if (query.contractorId) filter.contractorId = new mongoose.Types.ObjectId(query.contractorId)
   if (query.freelancerId) filter.freelancerId = new mongoose.Types.ObjectId(query.freelancerId)
 
-  // Staff chỉ thấy dispute từ status OPEN trở đi (không thấy PENDING_REASONS, WAITING_ESCALATION)
+  // Staff chỉ thấy dispute từ status OPEN trở đi
+  // Ngoại lệ: dispute đã từng có staff xử lý (reopened) thì vẫn hiện
   if (!query.status) {
-    filter.status = {
-      $nin: [EDisputeStatus.PENDING_REASONS, EDisputeStatus.WAITING_ESCALATION]
-    }
+    filter.$or = [
+      { status: { $nin: [EDisputeStatus.PENDING_REASONS, EDisputeStatus.WAITING_ESCALATION] } },
+      { staffId: { $ne: null } } // Dispute đã mở lại — có staff trước đó
+    ]
   }
 
   return await paginate(DisputeForm, filter, query, DISPUTE_FIELDS, [

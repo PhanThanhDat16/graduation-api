@@ -6,6 +6,11 @@ export enum EChatGroupType {
   AI_CHAT = 'ai_chat'
 }
 
+export enum EChatGroupStatus {
+  ACTIVE = 'active',
+  CLOSED = 'closed'
+}
+
 export enum EChatMemberRole {
   MEMBER = 'member',
   OWNER = 'owner'
@@ -35,6 +40,7 @@ export interface ChatGroupListItem {
   lastSenderId: PublicChatUser | null
   createdAt: Date
   unreadCount: number
+  status: EChatGroupStatus
 }
 
 export interface ReplyPreview {
