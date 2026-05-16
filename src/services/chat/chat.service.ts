@@ -283,7 +283,7 @@ export const chatService = {
     // Staff auto-assign and auto-join for support/contract conversations
     if (isSupport && userId) {
       const sender = (await User.findById(userId).select('role').lean()) as any
-      if (sender && sender.role === 'staff') {
+      if (sender && (sender.role === 'staff' || sender.role === 'admin')) {
         // Auto-assign first staff to reply
         if (!conversation.assignedStaffId) {
           await ChatGroup.updateOne(
