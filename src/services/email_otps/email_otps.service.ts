@@ -57,7 +57,7 @@ const messageSend = (email: string, otpCode: string, subject: string) => {
                         background: #f4f4f4; padding: 16px; border-radius: 8px; margin: 16px 0;">
             ${otpCode}
             </div>
-            <p style="color: #666;">This code will expire in <strong>${OTP_EXPIRES_MINUTES} minutes</strong>.</p>
+            ${subject == 'Your new password' ? '' : `<p style="color: #666;">This code will expire in <strong>${OTP_EXPIRES_MINUTES} minutes</strong>.</p>`}
             <p style="color: #999; font-size: 12px;">If you did not request this, please ignore this email.</p>
         </div>
         `
@@ -117,7 +117,7 @@ const sendPasswordToEmail = async(email: string) => {
 
   await User.findOneAndUpdate({ email }, { password: passwordHash })
 
-  await transporter.sendMail(messageSend(email, password, 'Your temporary password') as any)
+  await transporter.sendMail(messageSend(email, password, 'Your new password') as any)
 
   return { message: 'Password sent successfully' }
 }
