@@ -146,26 +146,6 @@ const getMyWithdrawRequests = expressAsyncHandler(async (req: RequestWithUser, r
   })
 })
 
-// Cancel withdraw request
-const cancelWithdrawRequest = expressAsyncHandler(async (req: RequestWithUser, res: Response) => {
-  const userId = req.user?._id
-  const id = req.params.id as string
-
-  if (!userId) {
-    res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Unauthorized' })
-    return
-  }
-
-  if (!id) {
-    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Request ID is required' })
-    return
-  }
-
-  const result = await walletService.cancelWithdrawRequest(id, userId as string)
-
-  res.status(HttpStatus.OK).json(result)
-})
-
 // Admin: Get all withdraw requests
 const getAllWithdrawRequests = expressAsyncHandler(async (req: Request, res: Response) => {
   const query = req.query
@@ -345,7 +325,6 @@ export const walletController = {
   getMyTransactions,
   createWithdrawRequest,
   getMyWithdrawRequests,
-  cancelWithdrawRequest,
   getAllWithdrawRequests,
   processWithdrawRequest,
   getUserWallet,

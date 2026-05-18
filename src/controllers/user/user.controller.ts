@@ -32,7 +32,7 @@ const register = expressAsyncHandler(async (req: Request, res: Response) => {
     return
   }
 
-  await emailOtpService.sendOtpToEmail(email, 'register', { subject: 'Verify Your Email' })
+  emailOtpService.sendOtpToEmail(email, 'register', { subject: 'Verify Your Email' })
 
   res
     .status(HttpStatus.OK)

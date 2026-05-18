@@ -11,36 +11,51 @@ const USER_SAFE_FIELDS = `
 `
 
 const registerUser = async (userData: IUserRegister) => {
-  const existingUser = await User.findOne({ email: userData.email }).lean()
+  const existingUserByEmail = await User.findOne({
+    email: userData.email
+  })
 
-  if (existingUser && existingUser.isVerified) {
+  if (existingUserByEmail && existingUserByEmail.isVerified) {
     return false
+  }
+
+  if (userData.phone) {
+    const existingUserByPhone = await User.findOne({
+      phone: userData.phone,
+      email: { $ne: userData.email }
+    }).lean()
+
+    if (existingUserByPhone && existingUserByPhone.isVerified) {
+      return false
+    }
   }
 
   const seed = encodeURIComponent(userData.email || userData.fullName)
   const avatarUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`
 
-  let newUser
-
-  if (!existingUser) {
-    newUser = await User.create({
-      ...userData,
-      avatar: avatarUrl
-    })
-  } else if (!existingUser.isVerified) {
-    newUser = await User.findOneAndUpdate({ email: userData.email }, { ...userData, avatar: avatarUrl }, { new: true })
+  const payload = {
+    ...userData,
+    avatar: existingUserByEmail?.avatar || avatarUrl
   }
 
+  const user = existingUserByEmail
+    ? await User.findOneAndUpdate(
+        { email: userData.email },
+        payload,
+        { new: true }
+      )
+    : await User.create(payload)
+
   return {
-    email: newUser?.email || '',
-    fullName: newUser?.fullName || '',
-    phone: newUser?.phone || '',
-    birthday: newUser?.birthday || '',
-    gender: newUser?.gender || '',
-    address: newUser?.address || '',
-    role: newUser?.role || '',
-    avatar: newUser?.avatar || '',
-    isVerified: newUser?.isVerified || false
+    email: user?.email || '',
+    fullName: user?.fullName || '',
+    phone: user?.phone || '',
+    birthday: user?.birthday || '',
+    gender: user?.gender || '',
+    address: user?.address || '',
+    role: user?.role || '',
+    avatar: user?.avatar || '',
+    isVerified: user?.isVerified || false
   }
 }
 

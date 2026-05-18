@@ -36,11 +36,18 @@ const resendOTP = expressAsyncHandler(async (req: Request, res: Response) => {
   const { email, purpose } = req.body
 
   if (!email || !purpose) {
-    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Email and purpose are required' })
+    res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'Email and purpose are required'
+    })
     return
   }
 
-  const result = await emailOtpService.sendOtpToEmail(email, purpose, { requireExisting: true, subject: 'Resend OTP' })
+  const result = await emailOtpService.sendOtpToEmail(
+    email,
+    purpose,
+    { subject: 'Resend OTP FOR ' + purpose.toUpperCase() }
+  )
+
   res.status(HttpStatus.OK).json({
     message: result.message,
     expiresAt: result.expiresAt
