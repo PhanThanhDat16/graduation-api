@@ -197,7 +197,7 @@ export const vnpayController = {
       const email = (transaction.userId as any).email as string
 
       res.redirect(
-        `http://localhost:3000/payment-result?orderId=${vnp_TxnRef}&resultCode=${vnp_ResponseCode}&message=${transaction.description}&amount=${transaction.amount}&methodPayment=${EPaymentMethod.VNPAY}&author_payment=${authorName}&email=${email}`
+        `http://localhost:3000/payment-result?orderId=${vnp_TxnRef}&resultCode=${vnp_ResponseCode}&message=${transaction.description}&amount=${transaction.amount}&methodPayment=${EPaymentMethod.VNPAY}&authorPayment=${authorName}&email=${email}`
       )
     } catch (error) {
       logger.error('Handle return error:', error)

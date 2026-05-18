@@ -4,7 +4,7 @@ import { User } from '@/models/user.model'
 import bcrypt from 'bcrypt'
 
 const OTP_LENGTH = 6
-const OTP_EXPIRES_MINUTES = 5
+const OTP_EXPIRES_MINUTES = 1
 const MAX_OTP_ATTEMPTS = 5
 const RESEND_COOLDOWN = 60 * 1000
 
@@ -71,37 +71,50 @@ type OtpPurpose = 'register' | 'forgot_password' | 'change_email'
 const sendOtpToEmail = async (
   email: string,
   purpose: OtpPurpose,
-  options?: { requireExisting?: boolean; subject?: string }
+  options?: { subject?: string }
 ) => {
   const now = new Date()
 
   const existing = await EmailOtp.findOne({ email, purpose })
 
-  // rate limit
-  if (options?.requireExisting && !existing) {
-    throw new Error('No OTP request found. Please request a new OTP.')
+  // OTP còn hiệu lực => không cho resend
+  if (existing && existing.expiresAt > now) {
+    throw new Error('OTP is still valid. Please wait until it expires.')
   }
 
-  if (existing?.lastSentAt) {
-    const diff = now.getTime() - existing.lastSentAt.getTime()
-    if (diff < RESEND_COOLDOWN) {
-      throw new Error('Please wait before requesting another OTP')
-    }
+  // nếu OTP cũ đã hết hạn thì xóa
+  if (existing && existing.expiresAt <= now) {
+    await EmailOtp.deleteOne({ _id: existing._id })
   }
 
   const otpCode = generateOtp()
   const otpHash = await bcrypt.hash(otpCode, 10)
-  const expiresAt = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000)
 
-  // Upsert: create or replace existing OTP for this email
-  await EmailOtp.findOneAndUpdate(
-    { email, purpose },
-    { otpHash, attempts: 0, expiresAt, lastSentAt: now },
-    { upsert: true, new: true }
+  const expiresAt = new Date(
+    Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000
   )
 
-  await transporter.sendMail(messageSend(email, otpCode, options?.subject || 'Your Verification Code') as any)
-  return { message: 'OTP sent successfully', expiresAt }
+  await EmailOtp.create({
+    email,
+    purpose,
+    otpHash,
+    attempts: 0,
+    expiresAt,
+    lastSentAt: now
+  })
+
+  await transporter.sendMail(
+    messageSend(
+      email,
+      otpCode,
+      options?.subject || 'Your Verification Code'
+    ) as any
+  )
+
+  return {
+    message: 'OTP sent successfully',
+    expiresAt
+  }
 }
 
 /** Send password to email */
@@ -135,16 +148,24 @@ const verifyEmail = async (email: string, otpCode: string, purpose: OtpPurpose) 
     throw new Error('OTP has expired. Please request a new OTP.')
   }
 
-  if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
-    await EmailOtp.deleteOne({ email, purpose })
-    throw new Error('Too many failed attempts. Please request a new OTP.')
-  }
-
   const isMatch = await bcrypt.compare(otpCode, otpRecord.otpHash)
 
   if (!isMatch) {
     otpRecord.attempts += 1
+
+    if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+      await EmailOtp.deleteOne({
+        email,
+        purpose
+      })
+
+      throw new Error(
+        'Too many failed attempts. Please request a new OTP.'
+      )
+    }
+
     await otpRecord.save()
+
     throw new Error('Invalid OTP code.')
   }
 
@@ -152,6 +173,7 @@ const verifyEmail = async (email: string, otpCode: string, purpose: OtpPurpose) 
   if (purpose === 'register') {
     await User.findOneAndUpdate({ email }, { isVerified: true })
   }
+
   await EmailOtp.deleteOne({ email, purpose })
 
   return { message: 'Email verified successfully' }

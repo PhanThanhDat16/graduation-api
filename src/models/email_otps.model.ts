@@ -10,7 +10,7 @@ const emailOtpSchema = new mongoose.Schema<IEmailOtp>(
     },
     otpHash: { type: String, required: true },
     attempts: { type: Number, default: 0 },
-    expiresAt: { type: Date, required: true, index: { expires: '0s' } },
+    expiresAt: { type: Date, required: true },
     lastSentAt: { type: Date, required: true }
   },
   {

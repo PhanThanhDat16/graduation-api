@@ -13,7 +13,6 @@ router.get('/transactions', requireAuth, walletController.getMyTransactions)
 // Withdraw request routes (user)
 router.post('/withdraw-requests', requireAuth, walletController.createWithdrawRequest)
 router.get('/withdraw-requests', requireAuth, walletController.getMyWithdrawRequests)
-router.delete('/withdraw-requests/:id', requireAuth, walletController.cancelWithdrawRequest)
 
 // Staff routes (withdraw management + user wallet operations)
 router.get('/staff/withdraw-requests', requireAuth, walletController.getAllWithdrawRequests)

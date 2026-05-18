@@ -120,7 +120,7 @@ export const paymentController = {
     const order = await paymentService.getOrderStatus(orderId as string)
 
     res.redirect(
-      `http://localhost:3000/payment-result?orderId=${orderId}&resultCode=${resultCode}&message=${message}&amount=${order.amount}&methodPayment=${EPaymentMethod.MOMO}&author_payment=${order.fullName}&email=${order.email}`
+      `http://localhost:3000/payment-result?orderId=${orderId}&resultCode=${resultCode}&message=${message}&amount=${order.amount}&methodPayment=${EPaymentMethod.MOMO}&authorPayment=${order.fullName}&email=${order.email}`
     )
   }),
 

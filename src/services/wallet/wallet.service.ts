@@ -671,33 +671,6 @@ const processWithdrawRequest = async (requestId: string, status: EWithdrawStatus
   }
 }
 
-// Cancel withdraw request (user)
-const cancelWithdrawRequest = async (requestId: string, userId: string) => {
-  if (!mongoose.Types.ObjectId.isValid(requestId)) {
-    throw new Error('Invalid request ID format')
-  }
-
-  const request = await WithdrawRequest.findById(requestId).populate('accountId')
-
-  if (!request) {
-    throw new Error('Withdraw request not found')
-  }
-
-  const requestUserId = (request.accountId as any)?.userId?.toString()
-
-  if (requestUserId !== userId) {
-    throw new Error('You are not authorized to cancel this request')
-  }
-
-  if (request.status !== EWithdrawStatus.PENDING) {
-    throw new Error('This request cannot be cancelled')
-  }
-
-  await WithdrawRequest.findByIdAndDelete(requestId)
-
-  return { message: 'Withdraw request cancelled successfully' }
-}
-
 // Get transactions by contract ID
 const getTransactionsByContractId = async (contractId: string, query: PaginationQuery) => {
   if (!mongoose.Types.ObjectId.isValid(contractId)) {
@@ -801,7 +774,6 @@ export const walletService = {
   getMyWithdrawRequests,
   getAllWithdrawRequests,
   processWithdrawRequest,
-  cancelWithdrawRequest,
   getTransactionsByContractId,
   getTransactionById,
   getAllTransactions,
